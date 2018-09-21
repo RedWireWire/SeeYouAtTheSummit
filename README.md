@@ -43,3 +43,22 @@ Gameplay: Durante la animación de inicio de la partida, no habrá música. En e
 # Sonido
 En el menú principal y durante la secuencia de inicio de la partida, se creará un soundscape poco cargado. Estará dominado por el sonido del viento, con puntuales sonidos de aves en la distancia. Este soundscape desaparecerá una vez comience el gameplay, siendo sustituido por la música.\
 Cada acción de los jugadores tendrá sonidos cortos y satisfactorios asociados. Saltar, aterrizar, caminar, mover plataformas, colocarlas, y destruirlas.
+
+
+
+# Interfaz
+
+Se realizará una interfaz para cada una de las pantallas, todas las interfaces siguen un estilo similar, los botones que compongan esta interfaz tendrán un estilo cuadriculado, además de que se utilizará una misma gama de colores muy vivos(la cual será una gama entorno al morado) para todas.
+Todas las pantallas constarán con el mismo fondo el cual será una animación de la montaña que deberán escalar los jugadores.
+
+Menú principal:\
+La interfaz del menú principal estará compuesta por un botón "Match" en el centro de la pantalla. En la zona superior izquierda se encontrará el botón de ajustes (para modificar distintos parámetros como brillo, contraste, sonido...).
+
+Pantalla de matchmaking:\
+Será una pantalla espera que saldrá cuando el jugador quiera buscar una partida, esta durará el tiempo que tarde en encontrar a un jugador, aparecerá un símbolo de carga en el centro.
+
+Pantalla de juego:\
+En cuanto a la interfaz de la pantalla de juego constará de un menú desplegable en el que hay diferentes opciones como volver al menú principal, salir del juego...Una sección de la pantalla irá dedicada a cuáles van a ser las siguientes piezas que les  va soltar el juego, para que los jugadores sean conscientes de que piezas van a poder utilizar.
+
+Pantalla fin de juego:\
+Esta pantalla surge cuando la partida termina es decir cuando uno de los dos jugadores cae, en esta pantalla se encontrarán 3 botones, situados en el centro de la pantalla ordenados de forma vertical, uno para volver a buscar partida otro para salir del juego y uno para volver al menú principal.
