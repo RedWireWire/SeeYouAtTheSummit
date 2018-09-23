@@ -36,7 +36,11 @@ Condición de victoria:\
 El juego no tiene un objetivo explícito para alcanzar la victoria. Un jugador gana cuando su oponente pierde. Para esto tendrá que dejarle atrás, tanto con un movimiento más veloz y preciso tanto con la creación y destrucción estratégica de plataformas.
 
 # Estados del juego
-El juego cuenta con una estructura simple, que le aporta pocos estados de juego. El primero al que accedemos es el Menú Principal, que se muestra al ejecutar el juego. Desde este mismo Menú podremos volver al escritorio o pasar a la sala de matchmaking, donde esperamos hasta encontrar un rival contra el que jugar. Desde el matchmaking se puede volver al Menú principal, pero el paso a la pantalla de juego será automático al encontrar a un rival. En la pantalla de juego...
+El juego cuenta con una estructura simple, que le aporta pocos estados. El primero al que accedemos es el Menú Principal, que se muestra al ejecutar el juego. Desde este mismo Menú podremos volver al escritorio o pasar a la sala de matchmaking, donde esperamos hasta encontrar un rival contra el que jugar. Desde el matchmaking se puede volver al Menú principal, pero el paso a la pantalla de juego será automático al encontrar a un rival. Desde la pantalla de juego podemos volver al Menú Principal a través de un botón específico. Cuando un jugador pierda, se pasará a la pantalla de final de partida, y desde esta poddremos volver al Menú Principal, volver a jugar, o buscar otra partida.
+
+# Personajes
+Los personajes que los jugadores controlen serán siempre los mismos (el del Jugador 1 será siempre igual y lo mismo con el Jugador 2). Su diseño será simple y fácilmente diferenciable entre ellos mismos. Basados en figuras "stickman" básicas y de un solo color cada uno.
+
 # Música
 El juego tendrá dos pistas de música diferentes.\
 Menú principal: Una pista tranquila, de instrumentación escasa. Poco más que un instrumento melódico con ataque pronunciado y no demasiado sustain. Esto se combinará con el soundscape relajado de la montaña.\
@@ -45,8 +49,6 @@ Gameplay: Durante la animación de inicio de la partida, no habrá música. En e
 # Sonido
 En el menú principal y durante la secuencia de inicio de la partida, se creará un soundscape poco cargado. Estará dominado por el sonido del viento, con puntuales sonidos de aves en la distancia. Este soundscape desaparecerá una vez comience el gameplay, siendo sustituido por la música.\
 Cada acción de los jugadores tendrá sonidos cortos y satisfactorios asociados. Saltar, aterrizar, caminar, mover plataformas, colocarlas, y destruirlas.
-
-
 
 # Interfaz
 
