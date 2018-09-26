@@ -9,6 +9,8 @@ SeeYouAtTheSummit (o SYATS para abreviar) es un juego diseñado para PC en el qu
 SYATS es un juego que mezcla las mecánicas de movimiento del género de plataformas con la capacidad de construir estructuras con piezas aleatorias que caen del cielo al más puro estilo Tetris. El juego está destinado a todos los públicos, pero sobre todo aquellos que sientan nostalgia por el clásico Tetris encontrarán en SYATS la esencia que les hizo amarlo.\
 Para su desarrollo, se empleará el lenguaje de programación JavaScript en el entorno de desarrollo de Phaser. En cuanto a la edición de sonido/música e imágenes, se utilizarán los programas Reaper y Photoshop respectivamente.
 
+![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Pantalla%20de%20juego.png)
+
 # Mecánicas de juego
 Crear plataformas:\
 El campo de juego está dividido con una cuadrícula. Desde la parte superior de la pantalla, caen dos plataformas (una por jugador) inspiradas por el juego clásico "Tetris". Su comportamiento general en cuanto a forma y reglas de movimiento es parecido a este juego. Dependiendo del jugador que la controles, saldrá en la mitad derecha o izquierda (se estudiará en un prototipo la posibilidad de que empiecen siempre en el centro horizontal en vez de en un lado).\
@@ -41,6 +43,8 @@ El juego cuenta con una estructura simple, que le aporta pocos estados. El prime
 # Personajes
 Los personajes que los jugadores controlen serán siempre los mismos (el del Jugador 1 será siempre igual y lo mismo con el Jugador 2). Su diseño será simple y fácilmente diferenciable entre ellos mismos. Basados en figuras "stickman" básicas y de un solo color cada uno.
 
+![](Personajes.png)
+
 # Música
 El juego tendrá dos pistas de música diferentes.\
 Menú principal: Una pista tranquila, de instrumentación escasa. Poco más que un instrumento melódico con ataque pronunciado y no demasiado sustain. Esto se combinará con el soundscape relajado de la montaña.\
@@ -58,11 +62,17 @@ Todas las pantallas contarán con el mismo fondo el cual será una animación de
 Menú principal:\
 La interfaz del menú principal estará compuesta por un botón "Match" en el centro de la pantalla. En la zona superior izquierda se encontrará el botón de ajustes (para modificar distintos parámetros como brillo, contraste, sonido...).
 
+![Menú principal](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Interfaz.png)
+
 Pantalla de matchmaking:\
 Será una pantalla de espera que saldrá cuando el jugador principal quiera buscar una partida, esta durará el tiempo que tarde en encontrar a un rival. Durante la búsqueda aparecerá un símbolo de carga en el centro.
+
+![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Interfaz-matchmaking.png)
 
 Pantalla de juego:\
 En cuanto a la interfaz de la pantalla de juego constará de un menú desplegable en el que hay diferentes opciones como volver al menú principal, salir del juego... Una sección de la pantalla irá dedicada a ver cuáles van a ser las siguientes piezas que se dropearán para el jugador, para que estos sean conscientes de qué piezas van a poder utilizar.
 
 Pantalla fin de juego:\
 Esta pantalla surge cuando la partida termina es decir cuando uno de los dos jugadores cae. En esta pantalla se encontrarán 4 botones, situados en el centro de la pantalla ordenados de forma vertical: el primero para jugar otra partida de revancha, uno para buscar otra partida, otro para salir del juego y uno para volver al menú principal.
+![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Interfaz-pantalla-victoria.png)
+![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Interfaz-pantalla-derrota.png)
