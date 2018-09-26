@@ -9,7 +9,7 @@ SeeYouAtTheSummit (o SYATS para abreviar) es un juego diseñado para PC en el qu
 SYATS es un juego que mezcla las mecánicas de movimiento del género de plataformas con la capacidad de construir estructuras con piezas aleatorias que caen del cielo al más puro estilo Tetris. El juego está destinado a todos los públicos, pero sobre todo aquellos que sientan nostalgia por el clásico Tetris encontrarán en SYATS la esencia que les hizo amarlo.\
 Para su desarrollo, se empleará el lenguaje de programación JavaScript en el entorno de desarrollo de Phaser. En cuanto a la edición de sonido/música e imágenes, se utilizarán los programas Reaper y Photoshop respectivamente.
 
-![](InGameSYATS.png)
+![](Pantalla de juego.png)
 
 # Mecánicas de juego
 Crear plataformas:\
@@ -62,11 +62,17 @@ Todas las pantallas contarán con el mismo fondo el cual será una animación de
 Menú principal:\
 La interfaz del menú principal estará compuesta por un botón "Match" en el centro de la pantalla. En la zona superior izquierda se encontrará el botón de ajustes (para modificar distintos parámetros como brillo, contraste, sonido...).
 
+![Menú principal](Interfaz.png)
+
 Pantalla de matchmaking:\
 Será una pantalla de espera que saldrá cuando el jugador principal quiera buscar una partida, esta durará el tiempo que tarde en encontrar a un rival. Durante la búsqueda aparecerá un símbolo de carga en el centro.
+
+![](Interfaz-matchmaking.png)
 
 Pantalla de juego:\
 En cuanto a la interfaz de la pantalla de juego constará de un menú desplegable en el que hay diferentes opciones como volver al menú principal, salir del juego... Una sección de la pantalla irá dedicada a ver cuáles van a ser las siguientes piezas que se dropearán para el jugador, para que estos sean conscientes de qué piezas van a poder utilizar.
 
-*Pantalla fin de juego:*\
+Pantalla fin de juego:\
 Esta pantalla surge cuando la partida termina es decir cuando uno de los dos jugadores cae. En esta pantalla se encontrarán 4 botones, situados en el centro de la pantalla ordenados de forma vertical: el primero para jugar otra partida de revancha, uno para buscar otra partida, otro para salir del juego y uno para volver al menú principal.
+![](Interfaz-pantalla-victoria.png)
+![](Interfaz-pantalla-derrota.png)
