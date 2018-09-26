@@ -39,11 +39,12 @@ El juego no tiene un objetivo explícito para alcanzar la victoria. Un jugador g
 
 # Estados del juego
 El juego cuenta con una estructura simple, que le aporta pocos estados. El primero al que accedemos es el Menú Principal, que se muestra al ejecutar el juego. Desde este mismo Menú podremos volver al escritorio o pasar a la sala de matchmaking, donde esperamos hasta encontrar un rival contra el que jugar. Desde el matchmaking se puede volver al Menú principal, pero el paso a la pantalla de juego será automático al encontrar a un rival. Desde la pantalla de juego podemos volver al Menú Principal a través de un botón específico. Cuando un jugador pierda, se pasará a la pantalla de final de partida, y desde esta poddremos volver al Menú Principal, volver a jugar, o buscar otra partida.
+![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Images/DiagramaDeEstados.jpg)
 
 # Personajes
 Los personajes que los jugadores controlen serán siempre los mismos (el del Jugador 1 será siempre igual y lo mismo con el Jugador 2). Su diseño será simple y fácilmente diferenciable entre ellos mismos. Basados en figuras "stickman" básicas y de un solo color cada uno.
 
-![](Personajes.png)
+![](Images/Personajes.png)
 
 # Música
 El juego tendrá dos pistas de música diferentes.\
