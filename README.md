@@ -35,6 +35,12 @@ Cuando esto ocurra, la partida terminará y se reproducirá una pequeña animaci
 Condición de victoria:\
 El juego no tiene un objetivo explícito para alcanzar la victoria. Un jugador gana cuando su oponente pierde. Para esto tendrá que dejarle atrás, tanto con un movimiento más veloz y preciso tanto con la creación y destrucción estratégica de plataformas.
 
+# Estados del juego
+El juego cuenta con una estructura simple, que le aporta pocos estados. El primero al que accedemos es el Menú Principal, que se muestra al ejecutar el juego. Desde este mismo Menú podremos volver al escritorio o pasar a la sala de matchmaking, donde esperamos hasta encontrar un rival contra el que jugar. Desde el matchmaking se puede volver al Menú principal, pero el paso a la pantalla de juego será automático al encontrar a un rival. Desde la pantalla de juego podemos volver al Menú Principal a través de un botón específico. Cuando un jugador pierda, se pasará a la pantalla de final de partida, y desde esta poddremos volver al Menú Principal, volver a jugar, o buscar otra partida.
+
+# Personajes
+Los personajes que los jugadores controlen serán siempre los mismos (el del Jugador 1 será siempre igual y lo mismo con el Jugador 2). Su diseño será simple y fácilmente diferenciable entre ellos mismos. Basados en figuras "stickman" básicas y de un solo color cada uno.
+
 # Música
 El juego tendrá dos pistas de música diferentes.\
 Menú principal: Una pista tranquila, de instrumentación escasa. Poco más que un instrumento melódico con ataque pronunciado y no demasiado sustain. Esto se combinará con el soundscape relajado de la montaña.\
@@ -44,5 +50,19 @@ Gameplay: Durante la animación de inicio de la partida, no habrá música. En e
 En el menú principal y durante la secuencia de inicio de la partida, se creará un soundscape poco cargado. Estará dominado por el sonido del viento, con puntuales sonidos de aves en la distancia. Este soundscape desaparecerá una vez comience el gameplay, siendo sustituido por la música.\
 Cada acción de los jugadores tendrá sonidos cortos y satisfactorios asociados. Saltar, aterrizar, caminar, mover plataformas, colocarlas, y destruirlas.
 
+# Interfaz
 
+Se realizará una interfaz para cada una de las pantallas, todas las interfaces siguen un estilo similar, los botones que compongan esta interfaz tendrán un estilo cuadriculado, además de que se utilizará una misma gama de colores muy vivos(la cual será una gama entorno al morado) para todas.
+Todas las pantallas contarán con el mismo fondo el cual será una animación de la montaña que deberán escalar los jugadores.
 
+Menú principal:\
+La interfaz del menú principal estará compuesta por un botón "Match" en el centro de la pantalla. En la zona superior izquierda se encontrará el botón de ajustes (para modificar distintos parámetros como brillo, contraste, sonido...).
+
+Pantalla de matchmaking:\
+Será una pantalla de espera que saldrá cuando el jugador principal quiera buscar una partida, esta durará el tiempo que tarde en encontrar a un rival. Durante la búsqueda aparecerá un símbolo de carga en el centro.
+
+Pantalla de juego:\
+En cuanto a la interfaz de la pantalla de juego constará de un menú desplegable en el que hay diferentes opciones como volver al menú principal, salir del juego... Una sección de la pantalla irá dedicada a ver cuáles van a ser las siguientes piezas que se dropearán para el jugador, para que estos sean conscientes de qué piezas van a poder utilizar.
+
+Pantalla fin de juego:\
+Esta pantalla surge cuando la partida termina es decir cuando uno de los dos jugadores cae. En esta pantalla se encontrarán 4 botones, situados en el centro de la pantalla ordenados de forma vertical: el primero para jugar otra partida de revancha, uno para buscar otra partida, otro para salir del juego y uno para volver al menú principal.
