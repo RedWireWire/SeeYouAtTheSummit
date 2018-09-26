@@ -9,8 +9,6 @@ SeeYouAtTheSummit (o SYATS para abreviar) es un juego diseñado para PC en el qu
 SYATS es un juego que mezcla las mecánicas de movimiento del género de plataformas con la capacidad de construir estructuras con piezas aleatorias que caen del cielo al más puro estilo Tetris. El juego está destinado a todos los públicos, pero sobre todo aquellos que sientan nostalgia por el clásico Tetris encontrarán en SYATS la esencia que les hizo amarlo.\
 Para su desarrollo, se empleará el lenguaje de programación JavaScript en el entorno de desarrollo de Phaser. En cuanto a la edición de sonido/música e imágenes, se utilizarán los programas Reaper y Photoshop respectivamente.
 
-![alt text](https://raw.githubusercontent.com/username/projectname/branch/path/to/personajes.png)
-
 # Mecánicas de juego
 Crear plataformas:\
 El campo de juego está dividido con una cuadrícula. Desde la parte superior de la pantalla, caen dos plataformas (una por jugador) inspiradas por el juego clásico "Tetris". Su comportamiento general en cuanto a forma y reglas de movimiento es parecido a este juego. Dependiendo del jugador que la controles, saldrá en la mitad derecha o izquierda (se estudiará en un prototipo la posibilidad de que empiecen siempre en el centro horizontal en vez de en un lado).\
