@@ -68,5 +68,5 @@ Será una pantalla de espera que saldrá cuando el jugador principal quiera busc
 Pantalla de juego:\
 En cuanto a la interfaz de la pantalla de juego constará de un menú desplegable en el que hay diferentes opciones como volver al menú principal, salir del juego... Una sección de la pantalla irá dedicada a ver cuáles van a ser las siguientes piezas que se dropearán para el jugador, para que estos sean conscientes de qué piezas van a poder utilizar.
 
-Pantalla fin de juego:\
+*Pantalla fin de juego:*\
 Esta pantalla surge cuando la partida termina es decir cuando uno de los dos jugadores cae. En esta pantalla se encontrarán 4 botones, situados en el centro de la pantalla ordenados de forma vertical: el primero para jugar otra partida de revancha, uno para buscar otra partida, otro para salir del juego y uno para volver al menú principal.
