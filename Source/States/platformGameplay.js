@@ -4,71 +4,58 @@ var platformGameplayState = function(game) {
 
 var gravityStrength = 50;
 
-var playerJumpStrength = 100000;
+var playerJumpStrength = 1000;
 var playerMoveAcceleration = 500;
-var playerMaxHorizontalSpeed = 300;
+var playerMaxHorizontalSpeed = 500;
 var playerHorizontalDrag = 1200;
 
 var playerAirborneAccelFactor = 0.4;
 var playerAirborneDragFactor = 0.1;
 
+var playerJumpLeeway = 20;
+
 platformGameplayState.prototype = {
 
     liftedJumpKey: true,
 
-    preload: function() {
-        //alert("Entered platform gameplay state");
-
-        //Cargar sprites
+    preload: function() 
+    {
+        //Load sprites
         game.load.image("personaje", "Assets/Sprites/TestCharacter.png");
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
     },
 
     create: function() {
-        //alert("Create");
-        
-        //Fondo
+        //Background
         this.stage.backgroundColor = "#333333";
 
-        //Crear suelo
+        //Create the ground
         this.suelo = game.add.sprite(0, gameHeight - 100, "suelo");
         this.suelo.scale.setTo(3, 1);
 
-        //Crear jugador
+        //Create the player
         this.jugador = game.add.sprite(0, 0,"personaje");
 
-        //Físicas suelo        
+        //Ground physics
         this.groundPhysicsGroup = game.add.physicsGroup();
         game.physics.arcade.enable(this.suelo);
         this.suelo.body.allowGravity = false;
-        this.suelo.body.inmovable = true;
+        this.suelo.body.immovable = true;
         this.suelo.body.moves = false;
         this.suelo.body.enable = true;
         this.groundPhysicsGroup.add(this.suelo);
         this.suelo.body.collideWorldBounds = true;
-        /*
-        game.physics.p2.enable(this.suelo);
-        this.suelo.body.collidesWithBounds = false;
-        */
-        //Físicas jugador       
+       
+        //Player phsyics
         this.playerPhysicsGroup = game.add.physicsGroup();
         game.physics.arcade.enable(this.jugador);
         this.jugador.body.allowGravity = false;     //We'll use our own gravity
+        this.jugador.body.drag = 0;                 //We'll use our own drag
         this.jugador.body.enable = true;
         this.playerPhysicsGroup.add(this.jugador);
 
         this.jugador.body.maxVelocity.x = playerMaxHorizontalSpeed;
         this.jugador.body.drag.x = playerHorizontalDrag;
-
-        
-
-        
-        
-        /*
-        game.physics.p2.enable(this.jugador);
-        this.jugador.body.fixedRotation = true;
-        */
-
     },
 
     update: function() {
@@ -77,11 +64,9 @@ platformGameplayState.prototype = {
 
         //Collisions
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup)
-
-        
     },
 
-    //Control de jugador
+    //Player control
     reactToPlayerInput: function(player)
     {
         //Reset acceleration
@@ -91,23 +76,21 @@ platformGameplayState.prototype = {
         //Read the input
         var rightInput = game.input.keyboard.isDown(Phaser.Keyboard.RIGHT) || game.input.keyboard.isDown(Phaser.Keyboard.D);
         var leftInput = game.input.keyboard.isDown(Phaser.Keyboard.LEFT) || game.input.keyboard.isDown(Phaser.Keyboard.A);
-        var jumpKey = game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR) || game.input.keyboard.isDown(Phaser.Keyboard.UP);
-        
-        //Check if the we will allow jump input 
+        var jumpKey = game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR) || game.input.keyboard.isDown(Phaser.Keyboard.UP) || game.input.keyboard.isDown(Phaser.Keyboard.W);
+
+        //Check if we will allow jump input 
+        if (!this.liftedJumpKey)
+        {
+            //console.log("Haven't lifted jump key");
+            if (!jumpKey)
+            {
+                this.liftedJumpKey = true;
+            }
+        }
         var jumpInputIsAllowed = this.liftedJumpKey;
-        this.liftedJumpKey = !jumpKey;
-        
-        
+
         //Check for airborne
         var isGrounded = this.playerIsGrounded(player);
-        if (isGrounded)
-        {
-            player.body.drag.x = playerHorizontalDrag;
-        }
-        else
-        {
-            player.body.drag.x = playerHorizontalDrag * playerAirborneDragFactor;
-        }
         
         //Horizontal movement
         if (leftInput && !rightInput)
@@ -126,16 +109,49 @@ platformGameplayState.prototype = {
         //Jumping
         if (jumpInputIsAllowed && jumpKey && isGrounded)
         {
-            player.body.acceleration.y = -playerJumpStrength;
+            player.body.y -= 1;     //This ugly hack prevents the player from technically being inside the ground and thus not jumping
+            player.body.velocity.y = -playerJumpStrength;
+            this.liftedJumpKey = false;
         }
     
         //Gravity
         player.body.velocity.y += gravityStrength;
-    
+
+        //Drag
+        var horSpeedBeforeDrag = player.body.velocity.x ;
+        var horDirection = Math.sign(horSpeedBeforeDrag);
+        var newHorSpeed = player.body.velocity.x - (horDirection * (playerHorizontalDrag * ((isGrounded) ? 1 : playerAirborneDragFactor)));
+        if (horDirection == -1)
+        {
+            player.body.velocity.x = Math.min(newHorSpeed, 0);
+        }
+        else if (horDirection == 1)
+        {
+            player.body.velocity.x = Math.max(newHorSpeed, 0);
+        }
+        else if (horDirection == 0)
+        {
+            player.body.velocity.x = 0;
+        } 
     },
 
     playerIsGrounded: function(player)
     {
-        return true;
+        //Prepare everything
+        player.body.moves = false;
+        var originalY = player.body.y;
+
+        //Move the player
+        player.body.y += playerJumpLeeway;
+
+        //Test for collisions
+        var touchingGround = game.physics.arcade.overlap(player, this.groundPhysicsGroup)
+
+        //Put everything in its place
+        player.body.y = originalY;
+        player.body.moves = true;
+
+        //Return the result
+        return touchingGround;
     }
 }
