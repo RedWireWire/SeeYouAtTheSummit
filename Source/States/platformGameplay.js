@@ -5,14 +5,14 @@ var platformGameplayState = function(game) {
 var gravityStrength = 50;
 
 var playerJumpStrength = 1000;
-var playerMoveAcceleration = 500;
+var playerMoveAcceleration = 1200;
 var playerMaxHorizontalSpeed = 500;
-var playerHorizontalDrag = 1200;
+var playerHorizontalDrag = 20;
 
 var playerAirborneAccelFactor = 0.4;
 var playerAirborneDragFactor = 0.1;
 
-var playerJumpLeeway = 20;
+var playerJumpLeeway = 15;
 
 platformGameplayState.prototype = {
 
@@ -92,18 +92,52 @@ platformGameplayState.prototype = {
         //Check for airborne
         var isGrounded = this.playerIsGrounded(player);
         
-        //Horizontal movement
+        //Get the push direction
+        var pushDirection;
         if (leftInput && !rightInput)
         {
-            player.body.acceleration.x += -playerMoveAcceleration * ((isGrounded) ? 1 : playerAirborneAccelFactor);
+            pushDirection = -1;
         }
         else if (rightInput && !leftInput)
         {
-            player.body.acceleration.x += playerMoveAcceleration * ((isGrounded) ? 1 : playerAirborneAccelFactor);
+            pushDirection = 1;
         }
-        else 
+        else
         {
-            player.body.acceleration.x += 0;
+            pushDirection = 0;
+        }
+        
+        //Get the movement direction
+        var movementDirection = Math.sign(player.body.velocity.x);
+
+        //Should we apply horizotal drag?
+        var doDrag;
+        if (pushDirection == movementDirection) doDrag = false;
+        else if (pushDirection != movementDirection)
+        {
+            if (movementDirection == 0) doDrag = false;
+            else doDrag = true;
+        }
+        
+        //Apply the push
+        player.body.acceleration.x += pushDirection * playerMoveAcceleration * ((isGrounded) ? 1 : playerAirborneAccelFactor);
+
+        //Apply drag
+        if (doDrag)
+        {
+            var newHorSpeed = player.body.velocity.x - (movementDirection * (playerHorizontalDrag * ((isGrounded) ? 1 : playerAirborneDragFactor)));
+            if (movementDirection == -1)
+            {
+                player.body.velocity.x = Math.min(newHorSpeed, 0);
+            }
+            else if (movementDirection == 1)
+            {
+                player.body.velocity.x = Math.max(newHorSpeed, 0);
+            }
+            else if (movementDirection == 0)
+            {
+                player.body.velocity.x = 0;
+            }
         }
 
         //Jumping
@@ -113,26 +147,16 @@ platformGameplayState.prototype = {
             player.body.velocity.y = -playerJumpStrength;
             this.liftedJumpKey = false;
         }
+        
+        
+        
+            
     
         //Gravity
         player.body.velocity.y += gravityStrength;
 
         //Drag
-        var horSpeedBeforeDrag = player.body.velocity.x ;
-        var horDirection = Math.sign(horSpeedBeforeDrag);
-        var newHorSpeed = player.body.velocity.x - (horDirection * (playerHorizontalDrag * ((isGrounded) ? 1 : playerAirborneDragFactor)));
-        if (horDirection == -1)
-        {
-            player.body.velocity.x = Math.min(newHorSpeed, 0);
-        }
-        else if (horDirection == 1)
-        {
-            player.body.velocity.x = Math.max(newHorSpeed, 0);
-        }
-        else if (horDirection == 0)
-        {
-            player.body.velocity.x = 0;
-        } 
+         
     },
 
     playerIsGrounded: function(player)
