@@ -23,6 +23,7 @@ platformGameplayState.prototype = {
         //Load sprites
         game.load.image("personaje", "Assets/Sprites/TestCharacter.png");
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
+        game.load.spritesheet("characterSpritesheet", "Assets/Sprites/SpriteSheet.png", 250, 250, 7);
     },
 
     create: function() {
@@ -34,7 +35,14 @@ platformGameplayState.prototype = {
         this.suelo.scale.setTo(3, 1);
 
         //Create the player
-        this.jugador = game.add.sprite(0, 0,"personaje");
+        this.jugador = game.add.sprite(0, 0, "characterSpritesheet");
+        this.jugador.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
+        this.jugador.animations.add("idle", [0], 1, true);
+        this.jugador.animations.add("jump", [6], 1, true);
+    
+        this.jugador.anchor.setTo(0.5, 0.5);
+        this.jugador.scale.x = 0.3;
+        this.jugador.scale.y = 0.3;
 
         //Ground physics
         this.groundPhysicsGroup = game.add.physicsGroup();
@@ -63,7 +71,7 @@ platformGameplayState.prototype = {
         this.reactToPlayerInput(this.jugador);
 
         //Collisions
-        game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup)
+        game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
     },
 
     //Player control
@@ -147,16 +155,28 @@ platformGameplayState.prototype = {
             player.body.velocity.y = -playerJumpStrength;
             this.liftedJumpKey = false;
         }
-        
-        
-        
-            
     
         //Gravity
         player.body.velocity.y += gravityStrength;
 
-        //Drag
-         
+        //Set animation
+        if (isGrounded)
+        {
+            if (pushDirection == 0)
+            {
+                player.animations.play("idle");
+                player.scale.x = Math.abs(player.scale.x);
+            }
+            else
+            {
+                player.scale.x = Math.abs(player.scale.x) * pushDirection;
+                player.animations.play("walk");
+            }
+        }
+        else
+        {
+            player.animations.play("jump");
+        }
     },
 
     playerIsGrounded: function(player)
