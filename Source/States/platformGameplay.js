@@ -2,9 +2,12 @@ var platformGameplayState = function(game) {
 
 }
 
+//Player movement parameters
 var gravityStrength = 50;
 
 var playerJumpStrength = 1000;
+var playerJumpLeeway = 15;
+
 var playerMoveAcceleration = 1200;
 var playerMaxHorizontalSpeed = 500;
 var playerHorizontalDrag = 20;
@@ -12,7 +15,8 @@ var playerHorizontalDrag = 20;
 var playerAirborneAccelFactor = 0.4;
 var playerAirborneDragFactor = 0.1;
 
-var playerJumpLeeway = 15;
+//Player sprite settings
+var playerSpriteScale = 0.3;
 
 platformGameplayState.prototype = {
 
@@ -30,45 +34,70 @@ platformGameplayState.prototype = {
         //Background
         this.stage.backgroundColor = "#333333";
 
+        //Physics initialization
+        this.createPhysicGroups();
+
         //Create the ground
-        this.suelo = game.add.sprite(0, gameHeight - 100, "suelo");
-        this.suelo.scale.setTo(3, 1);
+        this.ground = this.createWall(0, gameHeight - 100, 5, 1);
+        this.wall = this.createWall(600, 0, 1, 5);
 
         //Create the player
-        this.jugador = game.add.sprite(0, 0, "characterSpritesheet");
-        this.jugador.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
-        this.jugador.animations.add("idle", [0], 1, true);
-        this.jugador.animations.add("jump", [6], 1, true);
-    
-        this.jugador.anchor.setTo(0.5, 0.5);
-        this.jugador.scale.x = 0.3;
-        this.jugador.scale.y = 0.3;
+        this.player = this.createPlayer(0, 0);
+    },
 
-        //Ground physics
+    createPhysicGroups: function()
+    {
         this.groundPhysicsGroup = game.add.physicsGroup();
-        game.physics.arcade.enable(this.suelo);
-        this.suelo.body.allowGravity = false;
-        this.suelo.body.immovable = true;
-        this.suelo.body.moves = false;
-        this.suelo.body.enable = true;
-        this.groundPhysicsGroup.add(this.suelo);
-        this.suelo.body.collideWorldBounds = true;
-       
-        //Player phsyics
         this.playerPhysicsGroup = game.add.physicsGroup();
-        game.physics.arcade.enable(this.jugador);
-        this.jugador.body.allowGravity = false;     //We'll use our own gravity
-        this.jugador.body.drag = 0;                 //We'll use our own drag
-        this.jugador.body.enable = true;
-        this.playerPhysicsGroup.add(this.jugador);
+    },
 
-        this.jugador.body.maxVelocity.x = playerMaxHorizontalSpeed;
-        this.jugador.body.drag.x = playerHorizontalDrag;
+    createWall: function(xPosition, yPosition, xScale, yScale) {
+        //Sprite
+        wall = game.add.sprite(xPosition, yPosition, "suelo");
+        wall.scale.setTo(xScale, yScale);
+
+        //Physics
+        game.physics.arcade.enable(wall);
+        wall.body.allowGravity = false;
+        wall.body.immovable = true;
+        wall.body.moves = false;
+        wall.body.enable = true;
+        wall.body.collideWorldBounds = true;
+        this.groundPhysicsGroup.add(wall);
+
+        return wall;
+    },
+
+    createPlayer: function(xPosition, yPosition)
+    {
+        //Sprites
+        player = game.add.sprite(xPosition, yPosition, "characterSpritesheet");
+        player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
+        player.animations.add("idle", [0], 1, true);
+        player.animations.add("jump", [6], 1, true);
+    
+        //Scaling
+        player.anchor.setTo(0.5, 0.5);
+        player.scale.x = playerSpriteScale;
+        player.scale.y = playerSpriteScale;
+
+        //Physics
+        game.physics.arcade.enable(player);
+        player.body.allowGravity = false;     //We'll use our own gravity
+        player.body.drag = 0;                 //We'll use our own drag
+        player.body.enable = true;
+
+        player.body.maxVelocity.x = playerMaxHorizontalSpeed;
+        player.body.drag.x = playerHorizontalDrag;
+
+        this.playerPhysicsGroup.add(player);
+
+        return player;
     },
 
     update: function() {
         //Player input
-        this.reactToPlayerInput(this.jugador);
+        this.reactToPlayerInput(this.player);
 
         //Collisions
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
