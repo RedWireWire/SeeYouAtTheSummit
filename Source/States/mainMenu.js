@@ -10,6 +10,7 @@ mainMenuState.prototype = {
 
     create: function() {
         game.state.start("platformGameplayState");
+        //game.state.start("platformPiezasState");
     },
 
     update: function() {
