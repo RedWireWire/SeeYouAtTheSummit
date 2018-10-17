@@ -3,11 +3,7 @@ var platformPiezasState = function(game) {
 }
 
 var tamañoCubo=100;
-var temporizador=0;
 var time=45;
-var keydown=false;
-var keyleft=false;
-var keyright=false;
 
 platformPiezasState.prototype = {
 
@@ -20,8 +16,14 @@ platformPiezasState.prototype = {
     create: function() {
         //Fondo
         this.stage.backgroundColor = "#2d2d2d";
+        this.pieza = new Array(3);
+
+        this.pieza[0] = game.add.sprite(gameWidth - 650, gameHeight - 600, "piece");
+        this.pieza[1] = game.add.sprite(gameWidth - 650, gameHeight - 600, "piece");
+        this.pieza[2] = game.add.sprite(gameWidth - 650, gameHeight - 700, "piece");
+        this.pieza[3] = game.add.sprite(gameWidth - 650, gameHeight - 800, "piece");
         
-        this.pieza = game.add.sprite(gameWidth - 550, gameHeight - 550,"piece");
+            
         
         //Create the ground
         this.suelo = game.add.sprite(0, gameHeight - 100, "suelo");
@@ -39,14 +41,19 @@ platformPiezasState.prototype = {
 
         //Pieza physics
         this.piecePhysicsGroup = game.add.physicsGroup();
-        game.physics.arcade.enable(this.pieza); 
-        this.pieza.body.allowGravity = false;
-        this.pieza.body.immovable = false;
-        this.pieza.body.moves = true;
-        this.pieza.body.enable = true;
-        this.pieza.colision=false; 
-        this.piecePhysicsGroup.add(this.pieza);
-
+        for (var i = 0; i <= 3; i++) {
+            game.physics.arcade.enable(this.pieza[i]);
+            this.pieza[i].body.allowGravity = false;
+            this.pieza[i].body.immovable = false;
+            this.pieza[i].body.moves = true;
+            this.pieza[i].body.enable = true;
+            this.pieza[i].colision = false;
+            this.pieza[i].temporizador = 0;
+            this.pieza[i].keydown = false;
+            this.pieza[i].keyleft = false;
+            this.pieza[i].keyright = false;
+            this.piecePhysicsGroup.add(this.pieza[i]);
+        }
         //Pieza detenida physics
         this.pieceStopPhysicsGroup = game.add.physicsGroup();
 
@@ -54,64 +61,64 @@ platformPiezasState.prototype = {
     },
 
     update: function() {
-        enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
-
-        if(!enterKey.isDown && !this.pieza.colision){
-            this.dirijirPieza(this.pieza);
-        }else{
-            this.pieza.body.immovable = true;
-            this.pieza.body.moves = false;
-            this.pieza.colision = true;
-            this.pieceStopPhysicsGroup.add(this.pieza);
+        for (var i = 0; i <= 3; i++) {
+            this.dirijirPieza(this.pieza[i]);
         }
     },
 
     dirijirPieza: function(piezaTetris)
     {
-
+        
+        enterKey = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
         downKey = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
         leftKey = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
         rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
-        
-        var tocando = this.tocandoSuelo(piezaTetris);
-        if(tocando){
-            piezaTetris.body.immovable = true;
-            piezaTetris.body.moves = false;
-            piezaTetris.colision = true;
-            this.pieceStopPhysicsGroup.add(piezaTetris);
-        }
 
-        if(temporizador>=time){
-            piezaTetris.body.y=piezaTetris.body.y+tamañoCubo;
-            temporizador=0;
-        }
+
+            if (!enterKey.isDown && !piezaTetris.colision) {
+                var tocando = this.tocandoSuelo(piezaTetris);
+                if (tocando) {
+                    piezaTetris.body.immovable = true;
+                    piezaTetris.body.moves = false;
+                    piezaTetris.colision = true;
+                    this.pieceStopPhysicsGroup.add(piezaTetris);
+                }
+
+                if (piezaTetris.temporizador >= time) {
+                    piezaTetris.body.y = piezaTetris.body.y + tamañoCubo;
+                    piezaTetris.temporizador = 0;
+                }
+
+                if (!downKey.isDown) { piezaTetris.keydown = false; }
+                if (downKey.isDown && !piezaTetris.keydown) {
+                    piezaTetris.body.y = piezaTetris.body.y + tamañoCubo;
+                    piezaTetris.keydown = true;
+                }
+                if (!leftKey.isDown) { piezaTetris.keyleft = false; }
+                if (leftKey.isDown && !piezaTetris.keyleft) {
+                    piezaTetris.body.x = piezaTetris.body.x - tamañoCubo;
+                    piezaTetris.keyleft = true;
+                }
+                if (!rightKey.isDown) { piezaTetris.keyright = false; }
+                if (rightKey.isDown && !piezaTetris.keyright) {
+                    piezaTetris.body.x = piezaTetris.body.x + tamañoCubo;
+                    piezaTetris.keyright = true;
+                }
+            } else {
+                piezaTetris.body.immovable = true;
+                piezaTetris.body.moves = false;
+                piezaTetris.colision = true;
+                this.pieceStopPhysicsGroup.add(piezaTetris);
+            }
         
-        if(!downKey.isDown){keydown=false;}
-        if (downKey.isDown && !keydown)
-        {
-            piezaTetris.body.y=piezaTetris.body.y+tamañoCubo;
-            keydown=true;
-        }
-        if(!leftKey.isDown){keyleft=false;}
-        if (leftKey.isDown && !keyleft)
-        {
-            piezaTetris.body.x=piezaTetris.body.x-tamañoCubo;
-            keyleft=true;
-        }
-        if(!rightKey.isDown){keyright=false;}
-        if (rightKey.isDown && !keyright)
-        {
-            piezaTetris.body.x=piezaTetris.body.x+tamañoCubo;
-            keyright=true;
-        }
-        temporizador++;
+        piezaTetris.temporizador++;
+       
     },
     
     tocandoSuelo: function(piezaTetris)
     {
        
         piezaTetris.body.moves = false;
-        this.pieceStopPhysicsGroup.add(piezaTetris);
         
         var originalY = piezaTetris.body.y;
         
@@ -126,7 +133,8 @@ platformPiezasState.prototype = {
 
         piezaTetris.body.y = originalY;
         piezaTetris.body.moves = true;
-
+        
         return tocandoSuelo;
+
     }
 }
