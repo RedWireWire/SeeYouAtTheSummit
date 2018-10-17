@@ -8,6 +8,10 @@ var gravityStrength = 50;
 var playerJumpStrength = 1000;
 var playerJumpLeeway = 15;
 
+var playerWallGrabLeeway = 10;
+var wallJumpYComponentFactor = 0.7;
+var wallJumpXComponentFactor = 0.5;
+
 var playerMoveAcceleration = 1200;
 var playerMaxHorizontalSpeed = 500;
 var playerHorizontalDrag = 20;
@@ -16,7 +20,7 @@ var playerAirborneAccelFactor = 0.4;
 var playerAirborneDragFactor = 0.1;
 
 //Player sprite settings
-var playerSpriteScale = 0.3;
+var playerSpriteScale = 0.5;
 
 platformGameplayState.prototype = {
 
@@ -27,7 +31,7 @@ platformGameplayState.prototype = {
         //Load sprites
         game.load.image("personaje", "Assets/Sprites/TestCharacter.png");
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
-        game.load.spritesheet("characterSpritesheet", "Assets/Sprites/SpriteSheet.png", 250, 250, 7);
+        game.load.spritesheet("characterSpritesheet", "Assets/Sprites/SpriteSheet.png", 250, 200, 10);
     },
 
     create: function() {
@@ -75,6 +79,7 @@ platformGameplayState.prototype = {
         player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
         player.animations.add("idle", [0], 1, true);
         player.animations.add("jump", [6], 1, true);
+        player.animations.add("grabWall", [1], 1, true);
     
         //Scaling
         player.anchor.setTo(0.5, 0.5);
@@ -96,11 +101,13 @@ platformGameplayState.prototype = {
     },
 
     update: function() {
+        //Collisions
+        game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
+
         //Player input
         this.reactToPlayerInput(this.player);
 
-        //Collisions
-        game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
+        
     },
 
     //Player control
@@ -118,7 +125,6 @@ platformGameplayState.prototype = {
         //Check if we will allow jump input 
         if (!this.liftedJumpKey)
         {
-            //console.log("Haven't lifted jump key");
             if (!jumpKey)
             {
                 this.liftedJumpKey = true;
@@ -126,8 +132,9 @@ platformGameplayState.prototype = {
         }
         var jumpInputIsAllowed = this.liftedJumpKey;
 
-        //Check for airborne
+        //Check for state
         var isGrounded = this.playerIsGrounded(player);
+        var isGrabbingWall = this.playerIsGrabbingWall(player);
         
         //Get the push direction
         var pushDirection;
@@ -178,10 +185,27 @@ platformGameplayState.prototype = {
         }
 
         //Jumping
-        if (jumpInputIsAllowed && jumpKey && isGrounded)
+        if (jumpInputIsAllowed && jumpKey)
         {
-            player.body.y -= 1;     //This ugly hack prevents the player from technically being inside the ground and thus not jumping
-            player.body.velocity.y = -playerJumpStrength;
+            //Should we do a walljump?
+            var doWallJump = false;
+            if (isGrabbingWall)
+            {
+                if (!isGrounded) doWallJump = true;
+            }
+
+            if (doWallJump)
+            {
+                var wallDirection = isGrabbingWall;
+                player.body.velocity.y = -playerJumpStrength * wallJumpYComponentFactor;
+                player.body.velocity.x = -wallDirection * playerJumpStrength * wallJumpYComponentFactor;
+            }
+            else if (isGrounded)
+            {
+                player.body.y -= 1;     //This ugly hack prevents the player from technically being inside the ground and thus not jumping
+                player.body.velocity.y = -playerJumpStrength;
+            }
+            
             this.liftedJumpKey = false;
         }
     
@@ -204,7 +228,12 @@ platformGameplayState.prototype = {
         }
         else
         {
-            player.animations.play("jump");
+            if (isGrabbingWall != 0)
+            {
+                player.scale.x = Math.abs(player.scale.x) * isGrabbingWall;
+                player.animations.play("grabWall");
+            } 
+            else player.animations.play("jump");
         }
     },
 
@@ -226,5 +255,30 @@ platformGameplayState.prototype = {
 
         //Return the result
         return touchingGround;
+    },
+
+    //Returns -1 or 1 depending on the direction. 0 if not grabbing.
+    playerIsGrabbingWall: function(player)
+    {
+        //Prepare everything
+        player.body.moves = false;
+        var originalX = player.body.x;
+        
+        //Check left
+        player.body.x -= playerWallGrabLeeway;
+        var grabbingLeft = game.physics.arcade.overlap(player, this.groundPhysicsGroup);
+        player.body.x = originalX;
+
+        //Check right
+        player.body.x += playerWallGrabLeeway;
+        var grabbingRight = game.physics.arcade.overlap(player, this.groundPhysicsGroup);
+        player.body.x = originalX;
+        
+        //Put everything back
+        player.body.moves = true;
+
+        if (grabbingLeft) return -1;
+        else if (grabbingRight) return 1;
+        else return 0;
     }
 }
