@@ -40,7 +40,7 @@ platformPiezasState.prototype = {
         //Pieza physics
         this.piecePhysicsGroup = game.add.physicsGroup();
         //Creacion de pieza
-        this.pieza=this.createPiece(1);
+        this.pieza=this.createPiece(5);
         //Pieza detenida physics
         this.pieceStopPhysicsGroup = game.add.physicsGroup();
 
@@ -61,17 +61,19 @@ platformPiezasState.prototype = {
         rightKey = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
         Rkey = game.input.keyboard.addKey(Phaser.Keyboard.R);
 
-        if (!Rkey.isDown) { piezaTetris.keyR = false; }
-        if(Rkey.isDown && !piezaTetris.keyR && !pararPieza){
-            //piezaTetris.angle+=90;
-            //piezaTetris.body.rotation +=90;
-            this.rotarPieza(piezaTetris);
-            piezaTetris.keyR = true;
-        }
             //Compruebo si ENTER esta pulsado si una parte de la pieza ha colisionado y por tanto la pieza completa lo hará. 
             if (!enterKey.isDown && !piezaTetris.colision && !pararPieza) {
+            
                 //Compruebo si está colisionando con el suelo o con otra pieza.
                 var tocando = this.tocandoSuelo(piezaTetris);
+                
+                if (!Rkey.isDown) { piezaTetris.keyR = false; }
+                if(Rkey.isDown && !piezaTetris.keyR ){
+                    //piezaTetris.angle+=90;
+                    //piezaTetris.body.rotation +=90;
+                    this.rotarPieza(piezaTetris);
+                    piezaTetris.keyR = true;
+                }
                 if (tocando) {
                     //Desactivo colision, movimiento, activo colision de la parte de la pieza y por tanto de la pieza completa.
                     piezaTetris.body.immovable = true;
@@ -237,6 +239,7 @@ platformPiezasState.prototype = {
         return this.pieza;
     },
     rotarPieza:function(piezaTetris){
+        
         switch(piezaTetris.code){
 
             case "L":
@@ -280,16 +283,16 @@ platformPiezasState.prototype = {
         
             case "T":
                 //Rotacion de T
-                if(piezaTetris.code=="T" && piezaTetris.code2==1 || piezaTetris.code2==10 || piezaTetris.code2==15){
+                if(piezaTetris.code2==1 || piezaTetris.code2==10 || piezaTetris.code2==15){
                     piezaTetris.body.x=piezaTetris.body.x + tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y - tamañoCubo;
                     if(piezaTetris.code2==15){piezaTetris.code2=3;}
                     else{piezaTetris.code2+=4;}
-                }else if(piezaTetris.code=="T" && piezaTetris.code2==2 || piezaTetris.code2==7 || piezaTetris.code2==9){
+                }else if(piezaTetris.code2==2 || piezaTetris.code2==7 || piezaTetris.code2==9){
                     piezaTetris.body.x=piezaTetris.body.x - tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y + tamañoCubo;
                     piezaTetris.code2+=4;
-                }else if(piezaTetris.code=="T" && piezaTetris.code2==3 || piezaTetris.code2==5 || piezaTetris.code2==14){
+                }else if(piezaTetris.code2==3 || piezaTetris.code2==5 || piezaTetris.code2==14){
                     piezaTetris.body.x=piezaTetris.body.x + tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y + tamañoCubo;
                     if(piezaTetris.code2==14){piezaTetris.code2=2;}
@@ -304,37 +307,37 @@ platformPiezasState.prototype = {
 
             case "Z":
                 //Rotación de Z
-                if(piezaTetris.code=="Z" && piezaTetris.code2==1 ||piezaTetris.code2==7){
+                if(piezaTetris.code2==1 ||piezaTetris.code2==7){
                     piezaTetris.body.x=piezaTetris.body.x - tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y - tamañoCubo;
                     piezaTetris.code2+=4;
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==2){
+                }else if(piezaTetris.code2==2){
                     piezaTetris.body.x=piezaTetris.body.x ;
                     piezaTetris.body.y=piezaTetris.body.y - (2*tamañoCubo);
                     piezaTetris.code2+=4;
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==3 || piezaTetris.code2==13){
+                }else if(piezaTetris.code2==3 || piezaTetris.code2==13){
                     piezaTetris.body.x=piezaTetris.body.x - tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y + tamañoCubo;
                     if(piezaTetris.code2==3){piezaTetris.code2+=4;}
                     else {piezaTetris.code2=1;}
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==5 || piezaTetris.code2==11){
+                }else if(piezaTetris.code2==5 || piezaTetris.code2==11){
                     piezaTetris.body.x=piezaTetris.body.x + tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y -tamañoCubo;
                     piezaTetris.code2+=4;
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==6){
+                }else if(piezaTetris.code2==6){
                     piezaTetris.body.x=piezaTetris.body.x + (2*tamañoCubo);
                     piezaTetris.body.y=piezaTetris.body.y ;
                     piezaTetris.code2+=4;
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==9 || piezaTetris.code2==15){
+                }else if(piezaTetris.code2==9 || piezaTetris.code2==15){
                     piezaTetris.body.x=piezaTetris.body.x + tamañoCubo;
                     piezaTetris.body.y=piezaTetris.body.y + tamañoCubo;
                     if(piezaTetris.code2==9){piezaTetris.code2+=4;}
                     else {piezaTetris.code2=3;}
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==10){
+                }else if(piezaTetris.code2==10){
                     piezaTetris.body.x=piezaTetris.body.x;
                     piezaTetris.body.y=piezaTetris.body.y + (2*tamañoCubo);
                     piezaTetris.code2+=4;
-                }else if(piezaTetris.code=="Z" && piezaTetris.code2==14){
+                }else if(piezaTetris.code2==14){
                     piezaTetris.code2=2;
                     piezaTetris.body.x=piezaTetris.body.x - (2*tamañoCubo);
                     piezaTetris.body.y=piezaTetris.body.y ;
