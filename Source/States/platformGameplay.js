@@ -21,6 +21,21 @@ var playerAirborneDragFactor = 0.1;
 
 //Player sprite settings
 var playerSpriteScale = 0.5;
+var playerHitboxWidthFactor = 0.7;
+var playerHitboxHeightFactor = 1;
+
+var player1Color = 0xff0000;
+var player2Color = 0x00ff00;
+
+//Player input settings
+var player1JumpKey = Phaser.Keyboard.SPACEBAR;
+var player1LeftMoveKey = Phaser.Keyboard.A;
+var player1RightMoveKey = Phaser.Keyboard.D;
+
+var player2JumpKey = Phaser.Keyboard.UP;
+var player2LeftMoveKey = Phaser.Keyboard.LEFT;
+var player2RightMoveKey = Phaser.Keyboard.RIGHT;
+
 
 platformGameplayState.prototype = {
 
@@ -31,12 +46,12 @@ platformGameplayState.prototype = {
         //Load sprites
         game.load.image("personaje", "Assets/Sprites/TestCharacter.png");
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
-        game.load.spritesheet("characterSpritesheet", "Assets/Sprites/SpriteSheet.png", 250, 200, 10);
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetJ1.png", 250, 200, 10);
     },
 
     create: function() {
         //Background
-        this.stage.backgroundColor = "#333333";
+        this.stage.backgroundColor = 0x333333;
 
         //Physics initialization
         this.createPhysicGroups();
@@ -46,7 +61,8 @@ platformGameplayState.prototype = {
         this.wall = this.createWall(600, 0, 1, 5);
 
         //Create the player
-        this.player = this.createPlayer(0, 0);
+        this.player1 = this.createPlayer(1, 0, 0);
+        this.player2 = this.createPlayer(2, 300, 0);
     },
 
     createPhysicGroups: function()
@@ -72,14 +88,26 @@ platformGameplayState.prototype = {
         return wall;
     },
 
-    createPlayer: function(xPosition, yPosition)
+    createPlayer: function(playerNumber, xPosition, yPosition)
     {
-        //Sprites
-        player = game.add.sprite(xPosition, yPosition, "characterSpritesheet");
+        //Sprite
+        player = game.add.sprite(xPosition, yPosition, "playerSpriteSheet");
+        switch (playerNumber)
+        {
+            case 1:
+                player.tint = player1Color;
+                break;
+            case 2:
+                player.tint = player2Color;
+            break;
+            default:
+                console.log("Unsupported player number " + playerNumber);
+        }
+        
         player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
         player.animations.add("idle", [0], 1, true);
         player.animations.add("jump", [6], 1, true);
-        player.animations.add("grabWall", [1], 1, true);
+        player.animations.add("grabWall", [7], 1, true);
     
         //Scaling
         player.anchor.setTo(0.5, 0.5);
@@ -97,6 +125,27 @@ platformGameplayState.prototype = {
 
         this.playerPhysicsGroup.add(player);
 
+        //Hitbox
+        player.body.width = player.body.width * playerHitboxWidthFactor;
+        player.body.height = player.body.height * playerHitboxHeightFactor;
+
+        //Input variables
+        switch (playerNumber)
+        {
+            case 1:
+                player.jumpKey = player1JumpKey;
+                player.leftMoveKey = player1LeftMoveKey;
+                player.rightMoveKey = player1RightMoveKey;
+                break;
+            case 2:
+                player.jumpKey = player2JumpKey;
+                player.leftMoveKey = player2LeftMoveKey;
+                player.rightMoveKey = player2RightMoveKey;
+                break;
+        }
+
+        player.liftedJumpKey = true;
+
         return player;
     },
 
@@ -105,7 +154,8 @@ platformGameplayState.prototype = {
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
 
         //Player input
-        this.reactToPlayerInput(this.player);
+        this.reactToPlayerInput(this.player1);
+        this.reactToPlayerInput(this.player2);
 
         
     },
@@ -118,19 +168,19 @@ platformGameplayState.prototype = {
         player.body.acceleration.y = 0;
         
         //Read the input
-        var rightInput = game.input.keyboard.isDown(Phaser.Keyboard.RIGHT) || game.input.keyboard.isDown(Phaser.Keyboard.D);
-        var leftInput = game.input.keyboard.isDown(Phaser.Keyboard.LEFT) || game.input.keyboard.isDown(Phaser.Keyboard.A);
-        var jumpKey = game.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR) || game.input.keyboard.isDown(Phaser.Keyboard.UP) || game.input.keyboard.isDown(Phaser.Keyboard.W);
+        var rightInput = game.input.keyboard.isDown(player.rightMoveKey);
+        var leftInput = game.input.keyboard.isDown(player.leftMoveKey);
+        var jumpKey = game.input.keyboard.isDown(player.jumpKey);
 
         //Check if we will allow jump input 
-        if (!this.liftedJumpKey)
+        if (!player.liftedJumpKey)
         {
             if (!jumpKey)
             {
-                this.liftedJumpKey = true;
+                player.liftedJumpKey = true;
             }
         }
-        var jumpInputIsAllowed = this.liftedJumpKey;
+        var jumpInputIsAllowed = player.liftedJumpKey;
 
         //Check for state
         var isGrounded = this.playerIsGrounded(player);
@@ -154,7 +204,7 @@ platformGameplayState.prototype = {
         //Get the movement direction
         var movementDirection = Math.sign(player.body.velocity.x);
 
-        //Should we apply horizotal drag?
+        //Should we apply horizontal drag?
         var doDrag;
         if (pushDirection == movementDirection) doDrag = false;
         else if (pushDirection != movementDirection)
@@ -206,7 +256,7 @@ platformGameplayState.prototype = {
                 player.body.velocity.y = -playerJumpStrength;
             }
             
-            this.liftedJumpKey = false;
+            player.liftedJumpKey = false;
         }
     
         //Gravity
