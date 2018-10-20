@@ -105,7 +105,7 @@ platformGameplayState.prototype = {
         }
         
         player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
-        player.animations.add("idle", [0], 1, true);
+        player.animations.add("idle", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 9, 8, 9, 8], 4, true);
         player.animations.add("jump", [6], 1, true);
         player.animations.add("grabWall", [7], 1, true);
     
