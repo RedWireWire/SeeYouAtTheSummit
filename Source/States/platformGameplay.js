@@ -1,6 +1,7 @@
 var platformGameplayState = function(game) {
 
 }
+
 ////////////////////
 //PLAYER VARIABLES//
 ////////////////////
@@ -52,8 +53,12 @@ var player2RightMoveKey = Phaser.Keyboard.RIGHT;
 ////////////////////
 var tamañoCubo=50;
 var time=45;
-var spawnizq=600;
-var spawndch=400;
+
+var pieceSpawnScreenTopMargin = 200;
+var pieceSpawnXPlayer1 = 400;
+var pieceSpawnXPlayer2 = 600;
+
+
 var pieceSpriteScale = 0.5;
 
 //Player piece input
@@ -71,15 +76,6 @@ var player2PieceFreeze= Phaser.Keyboard.U;
 
 
 platformGameplayState.prototype = {
-
-    render: function()
-    {
-        //For collision debugging
-        game.debug.body(this.player1);
-        game.debug.body(this.player2);
-        game.debug.body(this.player1Piece);
-        game.debug.body(this.player2Piece);
-    },
 
     preload: function() 
     {
@@ -100,15 +96,15 @@ platformGameplayState.prototype = {
 
         //Create the ground
         this.ground = this.createWall(0, gameHeight - 75, 5, 1);
-        this.wall = this.createWall(600, 0, 1, 5);
+        //this.wall = this.createWall(600, 0, 1, 5);
 
         //Create the player
         this.player1 = this.createPlayer(1, 0, 0);
         this.player2 = this.createPlayer(2, 300, 0);
 
         //Player pieces
-        this.player1Piece = this.createPiece(game.rnd.integerInRange(1, 5), gameWidth - spawnizq, gameHeight - spawnizq, 1);
-        this.player2Piece = this.createPiece(game.rnd.integerInRange(1, 5), gameWidth - spawndch, gameHeight - spawnizq, 2);
+        this.player1Piece = this.nextPiece(1);
+        this.player2Piece = this.nextPiece(2);
     },
 
     createPhysicGroups: function()
@@ -203,7 +199,7 @@ platformGameplayState.prototype = {
 
     createPiece: function(estilo,Xpieza,Ypieza,playerNumber){
         var pieza = new Object();
-        
+        pieza.playerNumber = playerNumber;
         switch(estilo){
             case 1:
             //Creación de la pieza L
@@ -789,5 +785,19 @@ platformGameplayState.prototype = {
             this.frozenPiecesPhysicsGroup.add(brick);
             this.piecePhysicsGroup.remove(brick);
         }
+    },
+
+    nextPiece: function(playerNumber)
+    {
+        var x = (playerNumber == 1) ? pieceSpawnXPlayer1 : pieceSpawnXPlayer2;
+        var y = pieceSpawnScreenTopMargin;
+        return this.createPiece(this.randomPieceShape(), x, y, playerNumber);
+    },
+
+    randomPieceShape: function()
+    {
+        return game.rnd.integerInRange(1, 5);
     }
+
+    
 }
