@@ -1,12 +1,12 @@
 var platformPiezasState = function(game) {
 
 }
-
+/*
 var tamañoCubo=50;
 var time=45;
 var spawnizq=600;
 var pieceSpriteScale = 0.5;
-
+*/
 platformPiezasState.prototype = {
 
     preload: function() {
