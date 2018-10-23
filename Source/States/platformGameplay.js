@@ -51,28 +51,37 @@ var player2RightMoveKey = Phaser.Keyboard.RIGHT;
 ////////////////////
 //TETRIS VARIABLES//
 ////////////////////
-var tamañoCubo=50;
-var time=45;
 
+//Visual settings
+var tamañoCubo = 50;
+var pieceSpriteScale = 0.5;
+
+//Spawn points
 var pieceSpawnScreenTopMargin = 200;
 var pieceSpawnXPlayer1 = 400;
 var pieceSpawnXPlayer2 = 600;
 
+//Timings
+var autoDescendTime = 45;
+var nextPieceWaitTime = 2000;  //In miliseconds
 
-var pieceSpriteScale = 0.5;
+
+
+
+
 
 //Player piece input
 var player1PieceRotate = Phaser.Keyboard.T;
 var player1PieceLeft = Phaser.Keyboard.F;
-var player1PieceRight= Phaser.Keyboard.H;
-var player1PieceDown= Phaser.Keyboard.G;
-var player1PieceFreeze= Phaser.Keyboard.R;
+var player1PieceRight = Phaser.Keyboard.H;
+var player1PieceDown = Phaser.Keyboard.G;
+var player1PieceFreeze = Phaser.Keyboard.R;
 
 var player2PieceRotate = Phaser.Keyboard.I;
 var player2PieceLeft = Phaser.Keyboard.J;
-var player2PieceRight= Phaser.Keyboard.L;
-var player2PieceDown= Phaser.Keyboard.K;
-var player2PieceFreeze= Phaser.Keyboard.U;
+var player2PieceRight = Phaser.Keyboard.L;
+var player2PieceDown = Phaser.Keyboard.K;
+var player2PieceFreeze = Phaser.Keyboard.U;
 
 
 platformGameplayState.prototype = {
@@ -103,8 +112,8 @@ platformGameplayState.prototype = {
         this.player2 = this.createPlayer(2, 300, 0);
 
         //Player pieces
-        this.player1Piece = this.nextPiece(1);
-        this.player2Piece = this.nextPiece(2);
+        this.nextPiece(1, this);
+        this.nextPiece(2, this);
     },
 
     createPhysicGroups: function()
@@ -538,7 +547,7 @@ platformGameplayState.prototype = {
                 }
     
                 //Temporizador que marca el ritmo de bajada de la pieza, cada pieza tiene su propio temporizador.
-                if (piezaTetris.moveTimer >= time) {
+                if (piezaTetris.moveTimer >= autoDescendTime) {
                     this.lowerPiece(piezaTetris);
                     piezaTetris.moveTimer = 0;
                 }
@@ -785,13 +794,27 @@ platformGameplayState.prototype = {
             this.frozenPiecesPhysicsGroup.add(brick);
             this.piecePhysicsGroup.remove(brick);
         }
+
+        setTimeout(this.nextPiece, nextPieceWaitTime, piezaTetris.playerNumber, this);
     },
 
-    nextPiece: function(playerNumber)
+    nextPiece: function(playerNumber, stateObject)
     {
+        //Create the piece
         var x = (playerNumber == 1) ? pieceSpawnXPlayer1 : pieceSpawnXPlayer2;
         var y = pieceSpawnScreenTopMargin;
-        return this.createPiece(this.randomPieceShape(), x, y, playerNumber);
+        var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
+
+        //Assign the piece
+        switch (playerNumber)
+        {
+            case 1: 
+                stateObject.player1Piece = piece;
+                break;
+            case 2:
+                stateObject.player2Piece = piece;
+                break;
+        }
     },
 
     randomPieceShape: function()
