@@ -59,7 +59,7 @@ var scaledCubeSize = unscaledCubeSize * pieceSpriteScale;
 var nonFrozenAlpha = 0.5;
 
 //Spawn points
-var pieceSpawnScreenBottomMarginInCubes = 10;
+var pieceSpawnScreenBottomMarginInCubes = 20;
 var pieceSpawnXFromCenterInCubes = 5;
 
 //Timings
@@ -282,21 +282,12 @@ platformGameplayState.prototype = {
             pieza.bricks[i].body.moves = true;
             pieza.bricks[i].body.enable = true;
             this.piecePhysicsGroup.add(pieza.bricks[i]);
-            
-            //Input Meaningless, I think?
-            pieza.bricks[i].keydown = false;
-            pieza.bricks[i].keyright = false;
-            pieza.bricks[i].keyleft = false;
-            pieza.bricks[i].keyR = false;
-            
 
-            pieza.bricks[i].colision = false;
-
-            //Scaling
+            //Sprite
             pieza.bricks[i].anchor.setTo(0.5, 0.5);
             pieza.bricks[i].scale.x = pieceSpriteScale;
             pieza.bricks[i].scale.y = pieceSpriteScale;
-            
+            pieza.bricks[i].alpha = nonFrozenAlpha;
         }
         
         pieza.moveTimer = 0;
@@ -553,14 +544,14 @@ platformGameplayState.prototype = {
     
                 //Temporizador que marca el ritmo de bajada de la pieza, cada pieza tiene su propio temporizador.
                 if (piezaTetris.moveTimer >= autoDescendTime) {
-                    this.lowerPiece(piezaTetris);
+                    if (!tocando) this.lowerPiece(piezaTetris);
                     piezaTetris.moveTimer = 0;
                 }
     
                 //forzar el bajar
                 if (!downKey.isDown) { piezaTetris.keydown = false; }
                 if (downKey.isDown && !piezaTetris.keydown) {
-                    this.lowerPiece(piezaTetris);
+                    if (!tocando) this.lowerPiece(piezaTetris);
                     piezaTetris.keydown = true;
                     piezaTetris.moveTimer = 0;
                 }
@@ -786,18 +777,23 @@ platformGameplayState.prototype = {
 
     freezePiece: function(piezaTetris)
     {
+        if (!this.pieceIsAllowedToFreeze(piezaTetris)) return;
+
         piezaTetris.frozen = true;
         for (i = 0; i < 4; i++)
         {
             brick = piezaTetris.bricks[i];
 
-            //Desactivo colision, movimiento, activo colision de la parte de la pieza y por tanto de la pieza completa.
+            //Stop movement
             brick.body.immovable = true;
             brick.body.moves = false;
-            
-
+        
+            //Start collisions
             this.frozenPiecesPhysicsGroup.add(brick);
             this.piecePhysicsGroup.remove(brick);
+
+            //Sprite
+            brick.alpha = 1;
         }
 
         setTimeout(this.nextPiece, nextPieceWaitTime, piezaTetris.playerNumber, this);
@@ -825,7 +821,23 @@ platformGameplayState.prototype = {
     randomPieceShape: function()
     {
         return game.rnd.integerInRange(1, 5);
-    }
+    },
 
+    pieceIsAllowedToFreeze: function(piece)
+    {
+        var placeOccupied = false;
+        for (i = 0; i < 4; i++)
+        {
+            if (game.physics.arcade.overlap(piece.bricks[i], this.frozenPiecesPhysicsGroup) ||
+                game.physics.arcade.overlap(piece.bricks[i], this.playerPhysicsGroup)
+            )
+            {
+                placeOccupied = true;
+                break;
+            }
+        }
+
+        return !placeOccupied;
+    }
     
 }
