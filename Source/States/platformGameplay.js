@@ -527,31 +527,23 @@ platformGameplayState.prototype = {
         {
             if (!enterKey.isDown) {
         
-                //Compruebo si está colisionando con el suelo o con otra pieza.
-                var tocando = this.piezaTocandoSuelo(piezaTetris);
-                
                 //Rotation
                 if (!Rkey.isDown) { piezaTetris.keyR = false; }
-                if(Rkey.isDown && !piezaTetris.keyR ){
+                if (Rkey.isDown && !piezaTetris.keyR ){
                     this.rotatePiece(piezaTetris);
                     piezaTetris.keyR = true;
                 }
     
-                //Freezing
-                if (tocando) {
-                    this.freezePiece(piezaTetris);
-                }
-    
                 //Temporizador que marca el ritmo de bajada de la pieza, cada pieza tiene su propio temporizador.
                 if (piezaTetris.moveTimer >= autoDescendTime) {
-                    if (!tocando) this.lowerPiece(piezaTetris);
+                    this.lowerPiece(piezaTetris);
                     piezaTetris.moveTimer = 0;
                 }
     
                 //forzar el bajar
                 if (!downKey.isDown) { piezaTetris.keydown = false; }
                 if (downKey.isDown && !piezaTetris.keydown) {
-                    if (!tocando) this.lowerPiece(piezaTetris);
+                    this.lowerPiece(piezaTetris);
                     piezaTetris.keydown = true;
                     piezaTetris.moveTimer = 0;
                 }
@@ -612,6 +604,8 @@ platformGameplayState.prototype = {
         {
             this.rotateBrick(piece.bricks[i]);
         }
+
+        if (this.piezaTocandoSuelo(piece)) piece.moveTimer = 0;
     },
 
     rotateBrick:function(brick){ 
@@ -761,9 +755,16 @@ platformGameplayState.prototype = {
 
     lowerPiece:function(piezaTetris)
     {
-        for (i = 0; i < 4; i++)
+        if (this.piezaTocandoSuelo(piezaTetris))
         {
-            piezaTetris.bricks[i].body.y += scaledCubeSize;
+            this.freezePiece(piezaTetris);
+        }
+        else
+        {
+            for (i = 0; i < 4; i++)
+            {
+                piezaTetris.bricks[i].body.y += scaledCubeSize;
+            }
         }
     },
 
