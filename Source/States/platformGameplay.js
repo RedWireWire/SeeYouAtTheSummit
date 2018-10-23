@@ -22,9 +22,17 @@ var playerAirborneAccelFactor = 0.4;
 var playerAirborneDragFactor = 0.1;
 
 //Player sprite settings
+var playerUnscaledSpriteWidth = 250;
+var playerUnscaledSpriteHeight = 200;
 var playerSpriteScale = 0.5;
-var playerHitboxWidthFactor = 0.7;
-var playerHitboxHeightFactor = 1;
+
+var playerSpriteCenterX = 0.47;
+var playerSpriteCenterY = 0.5;
+
+var playerHitboxLeftMargin = 75;
+var playerHitboxRightMargin = 90;
+var playerHitboxUpMargin = 60;
+var playerHitboxDownMargin = 3;
 
 var player1Color = 0xff0000;
 var player2Color = 0x00ff00;
@@ -49,27 +57,36 @@ var spawndch=400;
 var pieceSpriteScale = 0.5;
 
 //Player piece input
-var player1PieceRotate = Phaser.Keyboard.Y;
-var player1PieceLeft = Phaser.Keyboard.G;
-var player1PieceRight= Phaser.Keyboard.J;
-var player1PieceDown= Phaser.Keyboard.H;
-var player1PieceFreeze= Phaser.Keyboard.T;
+var player1PieceRotate = Phaser.Keyboard.T;
+var player1PieceLeft = Phaser.Keyboard.F;
+var player1PieceRight= Phaser.Keyboard.H;
+var player1PieceDown= Phaser.Keyboard.G;
+var player1PieceFreeze= Phaser.Keyboard.R;
 
-var player2PieceRotate = Phaser.Keyboard.O;
-var player2PieceLeft = Phaser.Keyboard.K;
-var player2PieceRight= Phaser.Keyboard.Ñ;
-var player2PieceDown= Phaser.Keyboard.L;
-var player2PieceFreeze= Phaser.Keyboard.P;
+var player2PieceRotate = Phaser.Keyboard.I;
+var player2PieceLeft = Phaser.Keyboard.J;
+var player2PieceRight= Phaser.Keyboard.L;
+var player2PieceDown= Phaser.Keyboard.K;
+var player2PieceFreeze= Phaser.Keyboard.U;
 
 
 platformGameplayState.prototype = {
+
+    render: function()
+    {
+        //For collision debugging
+        game.debug.body(this.player1);
+        game.debug.body(this.player2);
+        game.debug.body(this.player1Piece);
+        game.debug.body(this.player2Piece);
+    },
 
     preload: function() 
     {
         //Load sprites
         game.load.image("personaje", "Assets/Sprites/TestCharacter.png");
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetJ1.png", 250, 200, 10);
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetJ1.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
         game.load.image("piece", "Assets/Sprites/cuboPrueba.png");
     },
     
@@ -141,7 +158,7 @@ platformGameplayState.prototype = {
         player.animations.add("grabWall", [7], 1, true);
     
         //Scaling
-        player.anchor.setTo(0.5, 0.5);
+        player.anchor.setTo(playerSpriteCenterX, playerSpriteCenterY);
         player.scale.x = playerSpriteScale;
         player.scale.y = playerSpriteScale;
 
@@ -157,8 +174,12 @@ platformGameplayState.prototype = {
         this.playerPhysicsGroup.add(player);
 
         //Hitbox
-        player.body.width = player.body.width * playerHitboxWidthFactor;
-        player.body.height = player.body.height * playerHitboxHeightFactor;
+        player.body.setSize(
+            playerUnscaledSpriteWidth - playerHitboxLeftMargin - playerHitboxRightMargin,
+            playerUnscaledSpriteHeight - playerHitboxUpMargin - playerHitboxDownMargin,
+            playerHitboxLeftMargin,
+            playerHitboxUpMargin
+        );
 
         //Input variables
         switch (playerNumber)
@@ -365,8 +386,11 @@ platformGameplayState.prototype = {
             else doDrag = true;
         }
         
-        //Apply the push
-        player.body.acceleration.x += pushDirection * playerMoveAcceleration * ((isGrounded) ? 1 : playerAirborneAccelFactor);
+        //Apply the push, unless we're pushing towards a wall we're grabbing onto
+        if (isGrabbingWall == 0 || isGrabbingWall != pushDirection)
+        {
+            player.body.acceleration.x += pushDirection * playerMoveAcceleration * ((isGrounded) ? 1 : playerAirborneAccelFactor);
+        }
 
         //Apply drag
         if (doDrag)
@@ -449,7 +473,8 @@ platformGameplayState.prototype = {
         player.body.y += playerJumpLeeway;
 
         //Test for collisions
-        var touchingGround = game.physics.arcade.overlap(player, this.groundPhysicsGroup)
+        var touchingGround = game.physics.arcade.overlap(player, this.groundPhysicsGroup);
+        if (!touchingGround) touchingGround = game.physics.arcade.overlap(player, this.frozenPiecesPhysicsGroup);
 
         //Put everything in its place
         player.body.y = originalY;
@@ -469,11 +494,13 @@ platformGameplayState.prototype = {
         //Check left
         player.body.x -= playerWallGrabLeeway;
         var grabbingLeft = game.physics.arcade.overlap(player, this.groundPhysicsGroup);
+        if (!grabbingLeft) grabbingLeft = game.physics.arcade.overlap(player, this.frozenPiecesPhysicsGroup);
         player.body.x = originalX;
 
         //Check right
         player.body.x += playerWallGrabLeeway;
         var grabbingRight = game.physics.arcade.overlap(player, this.groundPhysicsGroup);
+        if (!grabbingRight) grabbingRight = game.physics.arcade.overlap(player, this.frozenPiecesPhysicsGroup);
         player.body.x = originalX;
         
         //Put everything back
