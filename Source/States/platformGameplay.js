@@ -59,7 +59,7 @@ var scaledCubeSize = unscaledCubeSize * pieceSpriteScale;
 var nonFrozenAlpha = 0.5;
 
 //Spawn points
-var pieceSpawnScreenBottomMarginInCubes = 20;
+var pieceSpawnScreenBottomMarginInCubes = 5;
 var pieceSpawnXFromCenterInCubes = 5;
 
 //Timings
@@ -80,7 +80,10 @@ var player2PieceRight = Phaser.Keyboard.L;
 var player2PieceDown = Phaser.Keyboard.K;
 var player2PieceFreeze = Phaser.Keyboard.U;
 
-
+///////////////
+//ENVIRONMENT//
+///////////////
+var groundHeightInCubes = 1;
 platformGameplayState.prototype = {
 
     preload: function() 
@@ -100,7 +103,7 @@ platformGameplayState.prototype = {
         this.createPhysicGroups();
 
         //Create the ground
-        this.ground = this.createWall(0, gameHeight - scaledCubeSize, 5, 1);
+        this.ground = this.createWall(0, gameHeight - scaledCubeSize * groundHeightInCubes, 5, 1);
         //this.wall = this.createWall(600, 0, 1, 5);
 
         //Create the player
@@ -332,6 +335,8 @@ platformGameplayState.prototype = {
         //Tetris input
         this.dirijirPieza(this.player1Piece);
         this.dirijirPieza(this.player2Piece);
+
+        console.log(game.input.mousePointer.x);
     },
 
     //PLAYER MOVEMENT
@@ -798,12 +803,16 @@ platformGameplayState.prototype = {
         }
 
         setTimeout(this.nextPiece, nextPieceWaitTime, piezaTetris.playerNumber, this);
+        this.getGridCoordinates(piezaTetris.bricks[0].x, piezaTetris.bricks[0].y);
     },
 
     nextPiece: function(playerNumber, stateObject)
     {
         //Create the piece
-        var x = (gameWidth / 2) + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize;
+        var screenCenterX = gameWidth / 2;
+        screenCenterX -= screenCenterX % scaledCubeSize;
+
+        var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
         var y = gameHeight - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
         var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
 
@@ -839,6 +848,26 @@ platformGameplayState.prototype = {
         }
 
         return !placeOccupied;
+    },
+
+    getGridCoordinates: function(xPosition, yPosition)
+    {
+        var tmpY = yPosition;
+        var tmpX = xPosition;
+        //Align to grid
+        tmpY += scaledCubeSize / 2;
+        tmpX -= scaledCubeSize / 2;
+        
+        tmpY -= gameHeight - scaledCubeSize * groundHeightInCubes;
+        
+        //To grid
+        var yCoordinate = -(tmpY / scaledCubeSize);
+        var xCoordinate = tmpX / scaledCubeSize;
+
+        return {
+            x: xCoordinate,
+            y: yCoordinate
+        };
     }
     
 }
