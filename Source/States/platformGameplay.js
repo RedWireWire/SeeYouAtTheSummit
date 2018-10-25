@@ -97,6 +97,14 @@ var winnerPlayer = null;
 ///////////////
 var groundHeightInCubes = 5;
 
+//Array with positions of tetris bricks
+var positionsBricks = new Array(25);
+var deleteCondicionX=0;
+var deleteCondicionY=0;
+for(var i=0;i<=25;i++){
+    positionsBricks[i] = new Array();
+}
+
 //Camera
 var cameraAutoScrollSpeed = 0.23232322;
 
@@ -329,6 +337,7 @@ platformGameplayState.prototype = {
                 pieza.keyleftC=player1PieceLeft;
                 pieza.keyrightC=player1PieceRight;
                 pieza.keydownC=player1PieceDown;
+                pieza.allowRotate=true;
                 for(var i=0;i<=3;i++){
                     pieza.bricks[i].tint=player1Color;
                 }
@@ -340,6 +349,7 @@ platformGameplayState.prototype = {
                 pieza.keyleftC=player2PieceLeft;
                 pieza.keyrightC=player2PieceRight;
                 pieza.keydownC=player2PieceDown;
+                pieza.allowRotate=true;
                 for(var i=0;i<=3;i++){
                     pieza.bricks[i].tint=player2Color;
                 }
@@ -607,10 +617,52 @@ platformGameplayState.prototype = {
             else
             {
                 this.freezePiece(piezaTetris);
+                //this.lineTetris(piezaTetris);
             }
         }
     },
 
+    lineTetris: function(piezaTetris){
+        for(var i=0;i<4;i++){
+            this.lineBricks(piezaTetris.bricks[i]);
+        }
+    },
+
+    lineBricks: function(brick){
+        var coordinates;
+        
+        coordinates = this.getGridCoordinates(brick.body.x,brick.body.y);
+        
+        positionsBricks[coordinates.x][coordinates.y]=brick;
+
+        for(var i=0;i<=25;i++){
+            if(positionsBricks[i][coordinates.y] != undefined ){
+                deleteCondicionX++;
+                if(deleteCondicionX>=5){
+                    for(var j=i-4;j<=i;j++){
+                        positionsBricks[j][coordinates.y].destroy();
+                        delete positionsBricks[j][coordinates.y];
+                        deleteCondicionX=0;
+                    }
+                }
+            }else{
+                deleteCondicionX=0;
+            }
+        }
+        //mientras que la i sea menor que la parte superior de la pantalla?
+
+        /*if(positionsBricks[coordinates.x][i] != undefined ){
+            deleteCondicionY++;
+            if(deleteCondicion>=5){
+                for(var j=i-4;j<=i;j++){
+                    delete positionsBricks[coordinates.x][j];
+                }
+            }
+        }else{
+            deleteCondicionY=0;
+        }*/
+    },
+    
     piezaTocandoSuelo: function(piezaTetris)
     {
         for (i = 0; i < 4; i++)
@@ -643,14 +695,29 @@ platformGameplayState.prototype = {
 
     rotatePiece: function(piece)
     {
+        //var piezaRotar= Object.assign(piece);
+        //if(this.allowrotate(piezaRotar)){
+            for (i = 0; i < 4; i++)
+            {
+                var brick=piece.bricks[i];
+                this.rotateBrick(brick);
+            }
+            if (this.piezaTocandoSuelo(piece)) piece.moveTimer = 0;
+        //}
+    },
+    /*allowrotate:function(piece){
+
         for (i = 0; i < 4; i++)
         {
-            this.rotateBrick(piece.bricks[i]);
+            var brick=piece.bricks[i];
+
+            this.rotateBrick(brick);
+            if(game.physics.arcade.overlap(brick, this.groundPhysicsGroup)){
+                return false;
+            }
         }
-
-        if (this.piezaTocandoSuelo(piece)) piece.moveTimer = 0;
-    },
-
+        return true;
+    },*/
     rotateBrick:function(brick){ 
         
         switch(brick.code){
@@ -801,6 +868,7 @@ platformGameplayState.prototype = {
         if (this.piezaTocandoSuelo(piezaTetris))
         {
             this.freezePiece(piezaTetris);
+            //this.lineTetris(piezaTetris);
         }
         else
         {
@@ -902,7 +970,6 @@ platformGameplayState.prototype = {
         var yCoordinate = -(tmpY / scaledCubeSize);
         var xCoordinate = tmpX / scaledCubeSize;
 
-        console.log(yCoordinate);
         return {
             x: xCoordinate,
             y: yCoordinate
