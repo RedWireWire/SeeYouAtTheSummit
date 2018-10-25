@@ -47,25 +47,27 @@ var player2JumpKey = Phaser.Keyboard.UP;
 var player2LeftMoveKey = Phaser.Keyboard.LEFT;
 var player2RightMoveKey = Phaser.Keyboard.RIGHT;
 
+//Player spawnpoints
+var playerSpawnDistanceFromCenterXFraction = 4;
+
 
 ////////////////////
 //TETRIS VARIABLES//
 ////////////////////
 
 //Visual settings
-var pieceSpriteScale = 0.3;
+var pieceSpriteScale = 0.5;
 var unscaledCubeSize = 100;
 var scaledCubeSize = unscaledCubeSize * pieceSpriteScale;
 var nonFrozenAlpha = 0.5;
 
 //Spawn points
-var pieceSpawnScreenBottomMarginInCubes = 5;
+var pieceSpawnScreenBottomMarginInCubes = 15;
 var pieceSpawnXFromCenterInCubes = 5;
 
 //Timings
 var autoDescendTime = 45;
 var nextPieceWaitTime = 2000;  //In miliseconds
-
 
 //Player piece input
 var player1PieceRotate = Phaser.Keyboard.T;
@@ -80,16 +82,29 @@ var player2PieceRight = Phaser.Keyboard.L;
 var player2PieceDown = Phaser.Keyboard.K;
 var player2PieceFreeze = Phaser.Keyboard.U;
 
+var GameStates = {
+    PreGame : 0,
+    GameInProgress : 1,
+    PlayerLost : 2,
+    Draw : 3
+};
+var currentGameState = GameStates.PreGame;
+var loserPlayer = null;
+var winnerPlayer = null;
+
 ///////////////
 //ENVIRONMENT//
 ///////////////
-var groundHeightInCubes = 1;
+var groundHeightInCubes = 5;
+
+//Camera
+var cameraAutoScrollSpeed = 0.23232322;
+
 platformGameplayState.prototype = {
 
     preload: function() 
     {
         //Load sprites
-        game.load.image("personaje", "Assets/Sprites/TestCharacter.png");
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetJ1.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
         game.load.image("piece", "Assets/Sprites/cuboPrueba.png");
@@ -99,16 +114,25 @@ platformGameplayState.prototype = {
         //Background
         this.stage.backgroundColor = 0x333333;
 
+        //World initialization
+        game.world.setBounds(0, 0, gameWidth, 100000);
+
+        //Camera initialization
+        game.camera.y = game.world.height;
+        game.camera.roundPx = false;
+
         //Physics initialization
         this.createPhysicGroups();
-
+        
         //Create the ground
-        this.ground = this.createWall(0, gameHeight - scaledCubeSize * groundHeightInCubes, 5, 1);
+        this.ground = this.createWall(0, game.world.height - scaledCubeSize * groundHeightInCubes, 5, 10);
         //this.wall = this.createWall(600, 0, 1, 5);
 
         //Create the player
-        this.player1 = this.createPlayer(1, 0, 0);
-        this.player2 = this.createPlayer(2, 300, 0);
+        var screenCenterX = gameWidth / 2;
+        var playerSpawnDistanceFromCenterX = gameWidth / playerSpawnDistanceFromCenterXFraction;
+        this.player1 = this.createPlayer(1, screenCenterX - playerSpawnDistanceFromCenterX, this.ground.y - 100);
+        this.player2 = this.createPlayer(2, screenCenterX + playerSpawnDistanceFromCenterX, this.ground.y - 100);
 
         //Player pieces
         this.nextPiece(1, this);
@@ -144,6 +168,7 @@ platformGameplayState.prototype = {
     {
         //Sprite
         player = game.add.sprite(xPosition, yPosition, "playerSpriteSheet");
+        player.name = "Player " + playerNumber;
         switch (playerNumber)
         {
             case 1:
@@ -156,6 +181,7 @@ platformGameplayState.prototype = {
                 console.log("Unsupported player number " + playerNumber);
         }
         
+        //Animation
         player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
         player.animations.add("idle", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 9, 8, 9, 8], 4, true);
         player.animations.add("jump", [6], 1, true);
@@ -324,19 +350,31 @@ platformGameplayState.prototype = {
     },
 
     update: function() {
+        
         //Collisions
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
 
-        //Player input
-        this.reactToPlayerInput(this.player1);
-        this.reactToPlayerInput(this.player2);
+        if (currentGameState == GameStates.PreGame)
+        {
+            currentGameState = GameStates.GameInProgress;
+        }
+        else if (currentGameState == GameStates.GameInProgress)
+        {
+            //Player input
+            this.reactToPlayerInput(this.player1);
+            this.reactToPlayerInput(this.player2);
 
-        //Tetris input
-        this.dirijirPieza(this.player1Piece);
-        this.dirijirPieza(this.player2Piece);
+            //Tetris input
+            if (this.player1Piece) this.dirijirPieza(this.player1Piece);
+            if (this.player2Piece) this.dirijirPieza(this.player2Piece);
 
-        console.log(game.input.mousePointer.x);
+            //Camera control
+            this.updateCameraPosition();
+
+            //Gamestate control
+            this.checkForGameEnd();
+        }
     },
 
     //PLAYER MOVEMENT
@@ -813,7 +851,7 @@ platformGameplayState.prototype = {
         screenCenterX -= screenCenterX % scaledCubeSize;
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
-        var y = gameHeight - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
+        var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
         var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
 
         //Assign the piece
@@ -858,16 +896,59 @@ platformGameplayState.prototype = {
         tmpY += scaledCubeSize / 2;
         tmpX -= scaledCubeSize / 2;
         
-        tmpY -= gameHeight - scaledCubeSize * groundHeightInCubes;
+        tmpY -= game.world.height - scaledCubeSize * groundHeightInCubes;
         
         //To grid
         var yCoordinate = -(tmpY / scaledCubeSize);
         var xCoordinate = tmpX / scaledCubeSize;
 
+        console.log(yCoordinate);
         return {
             x: xCoordinate,
             y: yCoordinate
         };
-    }
-    
+    },
+
+    updateCameraPosition: function()
+    {
+        game.camera.y -= cameraAutoScrollSpeed;
+    },
+
+    checkForGameEnd: function()
+    {
+        var player1Lost = !this.player1.inCamera;
+        var player2Lost = !this.player2.inCamera;
+        
+        if (player1Lost && !player2Lost) 
+        {
+            currentGameState = GameStates.PlayerLost;
+            winnerPlayer = this.player2;
+            loserPlayer = this.player1;
+            this.announceGameEnd();
+        }
+        else if (player2Lost && !player1Lost)
+        {
+            currentGameState = GameStates.PlayerLost;
+            winnerPlayer = this.player1;
+            loserPlayer = this.player2;
+            this.announceGameEnd();
+        }
+        else if (player1Lost && player2Lost)
+        {
+            currentGameState = GameStates.Draw;
+            this.announceGameEnd();
+        }
+    },
+
+    announceGameEnd: function()
+    {
+        if (currentGameState == GameStates.PlayerLost)
+        {
+            var announcementText = game.stage.add.text(gameWidth / 2, gameHeight / 2, winnerPlayer.name + "wins!");
+        }
+        else if (currentGameState == GameStates.Draw)
+        {
+            var announcementText = game.stage.add.text(gameWidth / 2, gameHeight / 2, "Everybody loses.");
+        }
+    }   
 }
