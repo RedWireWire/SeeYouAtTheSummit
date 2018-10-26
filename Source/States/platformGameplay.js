@@ -98,15 +98,15 @@ var winnerPlayer = null;
 var groundHeightInCubes = 5;
 
 //Array with positions of tetris bricks
-var positionsBricks = new Array(25);
-var deleteCondicionX=0;
-var deleteCondicionY=0;
+var brickPositions = new Array(25); //
+var deleteCondition = 5;
+
 for(var i=0;i<=25;i++){
-    positionsBricks[i] = new Array();
+    brickPositions[i] = new Array();
 }
 
 //Camera
-var cameraAutoScrollSpeed = 0.23232322;
+var cameraAutoScrollSpeed = 0.0;
 
 platformGameplayState.prototype = {
 
@@ -617,31 +617,24 @@ platformGameplayState.prototype = {
             else
             {
                 this.freezePiece(piezaTetris);
-                //this.lineTetris(piezaTetris);
             }
         }
     },
-
-    lineTetris: function(piezaTetris){
-        for(var i=0;i<4;i++){
-            this.lineBricks(piezaTetris.bricks[i]);
-        }
-    },
-
+ /*
     lineBricks: function(brick){
         var coordinates;
         
         coordinates = this.getGridCoordinates(brick.body.x,brick.body.y);
         
-        positionsBricks[coordinates.x][coordinates.y]=brick;
+        brickPositions[coordinates.x][coordinates.y]=brick;
 
         for(var i=0;i<=25;i++){
-            if(positionsBricks[i][coordinates.y] != undefined ){
+            if(brickPositions[i][coordinates.y] != undefined ){
                 deleteCondicionX++;
                 if(deleteCondicionX>=5){
                     for(var j=i-4;j<=i;j++){
-                        positionsBricks[j][coordinates.y].destroy();
-                        delete positionsBricks[j][coordinates.y];
+                        brickPositions[j][coordinates.y].destroy();
+                        delete brickPositions[j][coordinates.y];
                         deleteCondicionX=0;
                     }
                 }
@@ -651,16 +644,53 @@ platformGameplayState.prototype = {
         }
         //mientras que la i sea menor que la parte superior de la pantalla?
 
-        /*if(positionsBricks[coordinates.x][i] != undefined ){
+        /*if(brickPositions[coordinates.x][i] != undefined ){
             deleteCondicionY++;
             if(deleteCondicion>=5){
                 for(var j=i-4;j<=i;j++){
-                    delete positionsBricks[coordinates.x][j];
+                    delete brickPositions[coordinates.x][j];
                 }
             }
         }else{
             deleteCondicionY=0;
-        }*/
+        }
+    },
+*/
+    checkForBrickDestruction: function()
+    {
+        var currentGroup = 0;
+        for (i = 0; i < brickPositions.length; i++)
+        {
+            for (j = 0; j < brickPositions[i].length; j++)
+            {
+                var brick = this.getBrick(i, j);
+                if (brick) currentGroup++;
+                else 
+                {
+                    if (currentGroup >= deleteCondition)
+                    {
+                        var groupStartJ = j - currentGroup;
+                    
+                        for (k = groupStartJ; k < j; k++)
+                        {
+                            this.deleteBrick(this.getBrick(i, k));
+                        }
+                    }    
+                    currentGroup = 0;
+                }
+            }
+            currentGroup = 0;
+        }
+    },
+
+    deleteBrick: function(brick)
+    {
+        if (brick)
+        {
+            game.world.remove(brick, true);
+            console.log("Destroying");
+        }
+        
     },
     
     piezaTocandoSuelo: function(piezaTetris)
@@ -859,7 +889,6 @@ platformGameplayState.prototype = {
                     brick.body.y -= (2*scaledCubeSize);
                 }
             break;
-        
         }
     },
 
@@ -868,7 +897,6 @@ platformGameplayState.prototype = {
         if (this.piezaTocandoSuelo(piezaTetris))
         {
             this.freezePiece(piezaTetris);
-            //this.lineTetris(piezaTetris);
         }
         else
         {
@@ -904,12 +932,46 @@ platformGameplayState.prototype = {
             this.frozenPiecesPhysicsGroup.add(brick);
             this.piecePhysicsGroup.remove(brick);
 
+            //Remember this brick's position
+            var brickPosition = this.getGridCoordinates(brick.x, brick.y);
+            this.saveBrick(brick, brickPosition.x, brickPosition.y);
+            
             //Sprite
             brick.alpha = 1;
         }
 
+        this.checkForBrickDestruction();
         setTimeout(this.nextPiece, nextPieceWaitTime, piezaTetris.playerNumber, this);
-        this.getGridCoordinates(piezaTetris.bricks[0].x, piezaTetris.bricks[0].y);
+    },
+
+    saveBrick: function(brick, x, y)
+    {
+        this.resizeBrickArrayIfNeeded();
+        brickPositions[x][y] = brick;
+    },
+
+    getBrick: function(x, y)
+    {
+        this.resizeBrickArrayIfNeeded();
+        return brickPositions[x][y];
+    },
+
+    resizeBrickArrayIfNeeded(x, y)
+    {
+        if (brickPositions.length <= x)
+        {
+            var originalLength = brickPositions.length;
+            brickPositions.length = x + 1;
+
+            for (i = originalLength; i < brickPositions.length; i++)
+            {
+                brickPositions[i] = new Array();
+            }
+        }
+        if (brickPositions[x].length <= y)
+        {
+            brickPositions.length = y + 1;
+        }
     },
 
     nextPiece: function(playerNumber, stateObject)
