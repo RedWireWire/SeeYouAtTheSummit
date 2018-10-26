@@ -98,12 +98,15 @@ var winnerPlayer = null;
 var groundHeightInCubes = 5;
 
 //Array with positions of tetris bricks
-var brickPositions = new Array(25); //
+var startingArraySize = 3;
+var brickPositions = new Array(startingArraySize); //
 var deleteCondition = 5;
 
-for(var i=0;i<=25;i++){
-    brickPositions[i] = new Array();
+for(let i=0;i < startingArraySize; i++){
+    brickPositions[i] = new Array(startingArraySize);
 }
+
+var currentHighestColumnSize = 0;
 
 //Camera
 var cameraAutoScrollSpeed = 0.0;
@@ -144,7 +147,7 @@ platformGameplayState.prototype = {
 
         //Player pieces
         this.nextPiece(1, this);
-        this.nextPiece(2, this);
+        //this.nextPiece(2, this);
     },
 
     createPhysicGroups: function()
@@ -254,7 +257,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza ,"piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza-scaledCubeSize, "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza-(2*scaledCubeSize), "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="L";
                     pieza.bricks[i].index=i;
                 }
@@ -267,7 +270,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza, "piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza+scaledCubeSize, Ypieza, "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza, Ypieza-scaledCubeSize, "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="T";
                     pieza.bricks[i].index=i;
                 }
@@ -281,7 +284,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza, Ypieza+scaledCubeSize, "piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza+scaledCubeSize, "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza+scaledCubeSize, Ypieza, "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="Z";
                     pieza.bricks[i].index=i; 
                 }
@@ -294,7 +297,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza, Ypieza-scaledCubeSize, "piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza, Ypieza-(2*scaledCubeSize), "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza, Ypieza-(3*scaledCubeSize), "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="I";
                     pieza.bricks[i].index=i; 
                 }
@@ -311,7 +314,7 @@ platformGameplayState.prototype = {
         }
         
         //Brick initialization
-        for (var i = 0; i <= 3; i++) {
+        for (let i = 0; i <= 3; i++) {
             //Physics
             game.physics.arcade.enable(pieza.bricks[i]);
             pieza.bricks[i].body.allowGravity = false;
@@ -338,7 +341,7 @@ platformGameplayState.prototype = {
                 pieza.keyrightC=player1PieceRight;
                 pieza.keydownC=player1PieceDown;
                 pieza.allowRotate=true;
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].tint=player1Color;
                 }
 
@@ -350,7 +353,7 @@ platformGameplayState.prototype = {
                 pieza.keyrightC=player2PieceRight;
                 pieza.keydownC=player2PieceDown;
                 pieza.allowRotate=true;
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].tint=player2Color;
                 }
 
@@ -658,44 +661,114 @@ platformGameplayState.prototype = {
 */
     checkForBrickDestruction: function()
     {
-        var currentGroup = 0;
-        for (i = 0; i < brickPositions.length; i++)
+        //Checking for columns
+        var currentGroupSize = 0;
+        for (let i = 0; i < brickPositions.length; i++)
         {
-            for (j = 0; j < brickPositions[i].length; j++)
+            for (let j = 0; j < brickPositions[i].length; j++)
             {
                 var brick = this.getBrick(i, j);
-                if (brick) currentGroup++;
-                else 
+                var endGroup = false;
+                var groupEndIndex;
+                
+                //First null after group
+                if (!brick)
                 {
-                    if (currentGroup >= deleteCondition)
+                    endGroup = true;
+                    groupEndIndex = j - 1;
+                }
+                //End of the column
+                else if (j == brickPositions[i].length - 1)
+                {
+                    endGroup = true;
+                    groupEndIndex = j;
+                }
+                
+                //There is a brick here
+                if (brick) 
+                {
+                    currentGroupSize++;
+                }
+
+                //Check wether we need to destroy this group
+                if (endGroup && currentGroupSize != 0)
+                {
+                    if (currentGroupSize >= deleteCondition)
                     {
-                        var groupStartJ = j - currentGroup;
+                        var groupStartJ = groupEndIndex - currentGroupSize + 1;
                     
-                        for (k = groupStartJ; k < j; k++)
+                        for (let k = groupStartJ; k <= groupEndIndex; k++)
                         {
-                            this.deleteBrick(this.getBrick(i, k));
+                            this.deleteBrick(i, k);
                         }
                     }    
-                    currentGroup = 0;
+                    currentGroupSize = 0;
                 }
             }
-            currentGroup = 0;
+        }
+
+        //Checking for rows
+        currentGroupSize = 0;
+        for (let j = 0; j < brickPositions[0].length; j++)
+        {
+            for (let i = 0; i < brickPositions.length; i++)
+            {
+                var brick = this.getBrick(i, j);
+                var endGroup = false;
+                var groupEndIndex;
+                
+                //First null after group
+                if (!brick)
+                {
+                    endGroup = true;
+                    groupEndIndex = i - 1;
+                }
+                //End of the row
+                else if (i == brickPositions.length - 1)
+                {
+                    endGroup = true;
+                    groupEndIndex = i;
+                }
+                
+                //There is a brick here
+                if (brick) 
+                {
+                    currentGroupSize++;
+                }
+
+                //Check wether we need to destroy this group
+                if (endGroup && currentGroupSize != 0)
+                {
+                    if (currentGroupSize >= deleteCondition)
+                    {
+                        var groupStartI = groupEndIndex - currentGroupSize + 1;
+                    
+                        for (let k = groupStartI; k <= groupEndIndex; k++)
+                        {
+                            this.deleteBrick(this.getBrick(k, j));
+                        }
+                    }    
+                    currentGroupSize = 0;
+                }
+            }
         }
     },
 
-    deleteBrick: function(brick)
+    deleteBrick: function(x, y)
     {
+        var brick = this.getBrick(x, y);
         if (brick)
         {
-            game.world.remove(brick, true);
-            console.log("Destroying");
+            brick.destroy();
+            brickPositions[x][y] = undefined;
         }
+
         
     },
     
     piezaTocandoSuelo: function(piezaTetris)
     {
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             var brick = piezaTetris.bricks[i];
 
@@ -727,7 +800,7 @@ platformGameplayState.prototype = {
     {
         //var piezaRotar= Object.assign(piece);
         //if(this.allowrotate(piezaRotar)){
-            for (i = 0; i < 4; i++)
+            for (let i = 0; i < 4; i++)
             {
                 var brick=piece.bricks[i];
                 this.rotateBrick(brick);
@@ -737,7 +810,7 @@ platformGameplayState.prototype = {
     },
     /*allowrotate:function(piece){
 
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             var brick=piece.bricks[i];
 
@@ -900,7 +973,7 @@ platformGameplayState.prototype = {
         }
         else
         {
-            for (i = 0; i < 4; i++)
+            for (let i = 0; i < 4; i++)
             {
                 piezaTetris.bricks[i].body.y += scaledCubeSize;
             }
@@ -909,7 +982,7 @@ platformGameplayState.prototype = {
 
     movePiece: function(piezaTetris, direction)
     {
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             piezaTetris.bricks[i].body.x += direction * scaledCubeSize;
         }
@@ -920,7 +993,7 @@ platformGameplayState.prototype = {
         if (!this.pieceIsAllowedToFreeze(piezaTetris)) return;
 
         piezaTetris.frozen = true;
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             brick = piezaTetris.bricks[i];
 
@@ -946,13 +1019,13 @@ platformGameplayState.prototype = {
 
     saveBrick: function(brick, x, y)
     {
-        this.resizeBrickArrayIfNeeded();
+        this.resizeBrickArrayIfNeeded(x, y);
         brickPositions[x][y] = brick;
     },
 
     getBrick: function(x, y)
     {
-        this.resizeBrickArrayIfNeeded();
+        this.resizeBrickArrayIfNeeded(x, y);
         return brickPositions[x][y];
     },
 
@@ -963,14 +1036,17 @@ platformGameplayState.prototype = {
             var originalLength = brickPositions.length;
             brickPositions.length = x + 1;
 
-            for (i = originalLength; i < brickPositions.length; i++)
+            for (let i = originalLength; i < brickPositions.length; i++)
             {
-                brickPositions[i] = new Array();
+                brickPositions[i] = new Array(brickPositions[0].length);
             }
         }
-        if (brickPositions[x].length <= y)
+        if (brickPositions[0].length <= y)
         {
-            brickPositions.length = y + 1;
+            for (let i = 0; i < brickPositions.length; i++)
+            {
+                brickPositions[i].length = y + 1;
+            }
         }
     },
 
@@ -982,7 +1058,7 @@ platformGameplayState.prototype = {
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
         var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
-        var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
+        var piece = stateObject.createPiece(/*stateObject.randomPieceShape()*/ 4, x, y, playerNumber);
 
         //Assign the piece
         switch (playerNumber)
@@ -1004,7 +1080,7 @@ platformGameplayState.prototype = {
     pieceIsAllowedToFreeze: function(piece)
     {
         var placeOccupied = false;
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             if (game.physics.arcade.overlap(piece.bricks[i], this.frozenPiecesPhysicsGroup) ||
                 game.physics.arcade.overlap(piece.bricks[i], this.playerPhysicsGroup)
