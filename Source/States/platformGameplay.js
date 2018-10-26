@@ -617,7 +617,7 @@ platformGameplayState.prototype = {
             else
             {
                 this.freezePiece(piezaTetris);
-                //this.lineTetris(piezaTetris);
+                this.lineTetris(piezaTetris);
             }
         }
     },
@@ -649,18 +649,21 @@ platformGameplayState.prototype = {
                 deleteCondicionX=0;
             }
         }
-        //mientras que la i sea menor que la parte superior de la pantalla?
-
-        /*if(positionsBricks[coordinates.x][i] != undefined ){
+        
+        for(var i=0;i<=positionsBricks.length;i++){
+            if(positionsBricks[coordinates.x][i] != undefined ){
             deleteCondicionY++;
-            if(deleteCondicion>=5){
+            if(deleteCondicionY>=5){
                 for(var j=i-4;j<=i;j++){
+                    positionsBricks[coordinates.x][j].destroy();
                     delete positionsBricks[coordinates.x][j];
+                    deleteCondicionY=0;
                 }
             }
-        }else{
-            deleteCondicionY=0;
-        }*/
+            }else{
+                deleteCondicionY=0;
+        }
+    }
     },
     
     piezaTocandoSuelo: function(piezaTetris)
@@ -868,7 +871,7 @@ platformGameplayState.prototype = {
         if (this.piezaTocandoSuelo(piezaTetris))
         {
             this.freezePiece(piezaTetris);
-            //this.lineTetris(piezaTetris);
+            this.lineTetris(piezaTetris);
         }
         else
         {
@@ -961,8 +964,8 @@ platformGameplayState.prototype = {
         var tmpY = yPosition;
         var tmpX = xPosition;
         //Align to grid
-        tmpY += scaledCubeSize / 2;
-        tmpX -= scaledCubeSize / 2;
+        tmpY += scaledCubeSize ;
+        tmpX -= scaledCubeSize ;
         
         tmpY -= game.world.height - scaledCubeSize * groundHeightInCubes;
         
