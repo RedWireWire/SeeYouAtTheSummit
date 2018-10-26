@@ -105,6 +105,9 @@ var deleteCondition = 5;
 for(let i=0;i < startingArraySize; i++){
     brickPositions[i] = new Array(startingArraySize);
 }
+//Límites del mapa,
+var rightlimit=1280;
+var leftlimit=-30;
 
 var currentHighestColumnSize = 0;
 
@@ -813,14 +816,16 @@ platformGameplayState.prototype = {
     },
 
     allowRotate:function(piezaRotar){
-        
+        var condicionDeRotacion=true;
+
         this.rotateBrick(piezaRotar);
         
         if(game.physics.arcade.overlap(this.piecePhysicsGroup, this.groundPhysicsGroup) || game.physics.arcade.overlap(this.piecePhysicsGroup, this.frozenPiecesPhysicsGroup)){
-            return false;
+            condicionDeRotacion=false;
+        }else{
+            condicionDeRotacion=this.limitesLateralesPiezas(piezaRotar,condicionDeRotacion);
         }
-        
-        return true;
+        return condicionDeRotacion;
     },
 
     guardarPiece:function(piezaRotar,indOriginal,originalX,originalY){
@@ -1003,10 +1008,42 @@ platformGameplayState.prototype = {
 
     movePiece: function(piezaTetris, direction)
     {
-        for (let i = 0; i < 4; i++)
-        {
-            piezaTetris.bricks[i].body.x += direction * scaledCubeSize;
+        if(this.allowMove(piezaTetris, direction)){
+            this.moveBrick(piezaTetris, direction);
         }
+    },
+
+    moveBrick: function(piezaTetris, direction)
+    {
+            for (let i = 0; i < 4; i++)
+            {
+                piezaTetris.bricks[i].body.x += direction * scaledCubeSize;
+            }
+    },
+
+    allowMove:function(piezaMove, dir){
+        var indOrg=new Array(4);
+        var orgX=new Array(4);
+        var orgY=new Array(4);
+        var condicionDeMovimiento=true;
+        this.guardarPiece(piezaMove,indOrg,orgX,orgY);
+
+        this.moveBrick(piezaMove,dir);
+
+        condicionDeMovimiento=this.limitesLateralesPiezas(piezaMove,condicionDeMovimiento);
+        
+        this.cargarPiece(piezaMove,indOrg,orgX,orgY);
+
+        return condicionDeMovimiento;
+    },
+
+    limitesLateralesPiezas:function(piezaMove,condicion){
+        for (let i = 0; i < 4; i++){
+            if(piezaMove.bricks[i].body.x>=rightlimit || piezaMove.bricks[i].body.x<=leftlimit){
+                condicion=false;
+            }
+        }
+        return condicion;
     },
 
     freezePiece: function(piezaTetris)
