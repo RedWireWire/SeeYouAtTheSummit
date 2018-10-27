@@ -147,7 +147,7 @@ platformGameplayState.prototype = {
 
         //Player pieces
         this.nextPiece(1, this);
-        //this.nextPiece(2, this);
+        this.nextPiece(2, this);
     },
 
     createPhysicGroups: function()
@@ -745,7 +745,7 @@ platformGameplayState.prototype = {
                     
                         for (let k = groupStartI; k <= groupEndIndex; k++)
                         {
-                            this.deleteBrick(this.getBrick(k, j));
+                            this.deleteBrick(k, j);
                         }
                     }    
                     currentGroupSize = 0;
@@ -1058,7 +1058,7 @@ platformGameplayState.prototype = {
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
         var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
-        var piece = stateObject.createPiece(/*stateObject.randomPieceShape()*/ 4, x, y, playerNumber);
+        var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
 
         //Assign the piece
         switch (playerNumber)
