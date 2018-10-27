@@ -35,8 +35,8 @@ var playerHitboxRightMargin = 90;
 var playerHitboxUpMargin = 60;
 var playerHitboxDownMargin = 3;
 
-var player1Color = 0xff0000;
-var player2Color = 0x00ff00;
+var player1Color = 0xff608b;
+var player2Color = 0xff9068;
 
 //Player input settings
 var player1JumpKey = Phaser.Keyboard.SPACEBAR;
@@ -114,7 +114,7 @@ var currentHighestColumnSize = 0;
 var currentHighestColumnSize = 0;
 
 //Camera
-var cameraAutoScrollSpeed = 0.0;
+var cameraAutoScrollSpeed = 2;
 
 platformGameplayState.prototype = {
 
@@ -152,7 +152,7 @@ platformGameplayState.prototype = {
 
         //Player pieces
         this.nextPiece(1, this);
-        //this.nextPiece(2, this);
+        this.nextPiece(2, this);
     },
 
     createPhysicGroups: function()
@@ -377,21 +377,24 @@ platformGameplayState.prototype = {
         {
             currentGameState = GameStates.GameInProgress;
         }
-        else if (currentGameState == GameStates.GameInProgress)
+        else 
         {
             //Player input
             this.reactToPlayerInput(this.player1);
             this.reactToPlayerInput(this.player2);
 
             //Tetris input
-            if (this.player1Piece) this.dirijirPieza(this.player1Piece);
-            if (this.player2Piece) this.dirijirPieza(this.player2Piece);
-
+            if (currentGameState == GameStates.GameInProgress)
+            {
+                if (this.player1Piece) this.dirijirPieza(this.player1Piece);
+                if (this.player2Piece) this.dirijirPieza(this.player2Piece);    
+            }
+        
             //Camera control
             this.updateCameraPosition();
 
             //Gamestate control
-            this.checkForGameEnd();
+            if (currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
         }
     },
 
@@ -403,10 +406,17 @@ platformGameplayState.prototype = {
         player.body.acceleration.y = 0;
         
         //Read the input
-        var rightInput = game.input.keyboard.isDown(player.rightMoveKey);
-        var leftInput = game.input.keyboard.isDown(player.leftMoveKey);
-        var jumpKey = game.input.keyboard.isDown(player.jumpKey);
+        var rightInput = false;
+        var leftInput = false;
+        var jumpKey = false;
 
+        if (currentGameState == GameStates.GameInProgress)
+        {
+            rightInput = game.input.keyboard.isDown(player.rightMoveKey);
+            leftInput = game.input.keyboard.isDown(player.leftMoveKey);
+            jumpKey = game.input.keyboard.isDown(player.jumpKey);
+        }
+        
         //Check if we will allow jump input 
         if (!player.liftedJumpKey)
         {
@@ -1083,7 +1093,7 @@ platformGameplayState.prototype = {
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
         var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
-        var piece = stateObject.createPiece(/*stateObject.randomPieceShape()*/ 4, x, y, playerNumber);
+        var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
 
         //Assign the piece
         switch (playerNumber)
@@ -1172,13 +1182,19 @@ platformGameplayState.prototype = {
 
     announceGameEnd: function()
     {
+
+        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
+        var message = "";
         if (currentGameState == GameStates.PlayerLost)
         {
-            var announcementText = game.stage.add.text(gameWidth / 2, gameHeight / 2, winnerPlayer.name + "wins!");
+            message = winnerPlayer.name + " wins!";
         }
         else if (currentGameState == GameStates.Draw)
         {
-            var announcementText = game.stage.add.text(gameWidth / 2, gameHeight / 2, "Everybody loses.");
+            message = "Everybody loses.";
         }
+        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
+        console.log(message);
+        announcementText.fixedToCamera = true;
     }   
 }
