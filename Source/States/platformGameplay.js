@@ -114,7 +114,8 @@ var currentHighestColumnSize = 0;
 var currentHighestColumnSize = 0;
 
 //Camera
-var cameraAutoScrollSpeed = 2;
+var cameraAutoScrollSpeed = 0.3;
+var cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
 
 platformGameplayState.prototype = {
 
@@ -1092,7 +1093,16 @@ platformGameplayState.prototype = {
         screenCenterX -= screenCenterX % scaledCubeSize;
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
-        var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
+        //var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
+        //var y = ((game.camera.view.y + game.camera - game.camera.view.min.y % scaledCubeSize) - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize;
+
+
+        var y = game.camera.view.y + game.camera.view.height;
+        y -= y % scaledCubeSize;
+        y -= scaledCubeSize / 2;
+        y -= pieceSpawnScreenBottomMarginInCubes * scaledCubeSize;
+
+
         var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
 
         //Assign the piece
@@ -1151,14 +1161,56 @@ platformGameplayState.prototype = {
 
     updateCameraPosition: function()
     {
-        game.camera.y -= cameraAutoScrollSpeed;
+        //See if we need to cath up
+        var cathupDistance;
+        var player1Overshoot = this.getPlayerScreenTopOvershoot(this.player1);
+        var player2Overshoot = this.getPlayerScreenTopOvershoot(this.player2);
+
+        if (player1Overshoot > player2Overshoot) cathupDistance = player1Overshoot;
+        else cathupDistance = player2Overshoot;
+
+        //Compute the needed speed
+        var addedSpeed = cathupDistance * cameraCatchupDistanceToSpeedIncreaseFactor;
+
+        game.camera.y -= cameraAutoScrollSpeed + addedSpeed;
+    },
+
+    //If it's zero, the player is BELOW the top of the screen
+    getPlayerScreenTopOvershoot: function(player)
+    {    
+        var difference = game.camera.view.y - player.y;
+        if (difference > 0)
+        {
+            //The player is over the top of the screen
+            return difference;
+        }
+        else 
+        {
+            //The player is not over the top of the screen
+            return 0;
+        }
     },
 
     checkForGameEnd: function()
     {
-        var player1Lost = !this.player1.inCamera;
-        var player2Lost = !this.player2.inCamera;
+        //are the players on screen?
+        var player1NotOnScreen = !this.player1.inCamera;
+        var player2NotOnScreen = !this.player2.inCamera;
+
+        //If a player is off-screen, are they below the top of the screen?
+        var player1Lost = false;
+        if (player1NotOnScreen && this.getPlayerScreenTopOvershoot(this.player1) == 0)
+        {
+            player1Lost = true;
+        }
+
+        var player2Lost = false;
+        if (player2NotOnScreen && this.getPlayerScreenTopOvershoot(this.player2) == 0)
+        {
+            player2Lost = true;
+        }
         
+        //Check if the game is over, and what the result is
         if (player1Lost && !player2Lost) 
         {
             currentGameState = GameStates.PlayerLost;
