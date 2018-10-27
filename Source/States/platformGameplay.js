@@ -117,8 +117,8 @@ platformGameplayState.prototype = {
     {
         //Load sprites
         game.load.image("suelo", "Assets/Sprites/TestGround.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetJ1.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
-        game.load.image("piece", "Assets/Sprites/cuboPrueba.png");
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
+        game.load.image("piece", "Assets/Sprites/Bloque.png");
     },    
 
     create: function() {
