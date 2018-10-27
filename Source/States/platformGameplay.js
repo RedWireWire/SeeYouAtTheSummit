@@ -801,30 +801,32 @@ platformGameplayState.prototype = {
 
     rotatePiece: function(piece)
     {
-        var indOrg=new Array(4);
-        var orgX=new Array(4);
-        var orgY=new Array(4);
-        
-        this.guardarPiece(piece,indOrg,orgX,orgY);
         if(this.allowRotate(piece)){
-            this.cargarPiece(piece,indOrg,orgX,orgY);
             this.rotateBrick(piece);
             if (this.piezaTocandoSuelo(piece)) piece.moveTimer = 0;
-        }else{
-            this.cargarPiece(piece,indOrg,orgX,orgY);
         }
     },
 
     allowRotate:function(piezaRotar){
+        var indOrg=new Array(4);
+        var orgX=new Array(4);
+        var orgY=new Array(4);
+        
         var condicionDeRotacion=true;
 
+        this.guardarPiece(piezaRotar,indOrg,orgX,orgY);
+
         this.rotateBrick(piezaRotar);
-        
-        if(game.physics.arcade.overlap(this.piecePhysicsGroup, this.groundPhysicsGroup) || game.physics.arcade.overlap(this.piecePhysicsGroup, this.frozenPiecesPhysicsGroup)){
-            condicionDeRotacion=false;
-        }else{
-            condicionDeRotacion=this.limitesLateralesPiezas(piezaRotar,condicionDeRotacion);
+        for (let i = 0; i < 4; i++){
+            var brick = piezaRotar.bricks[i];
+            if(game.physics.arcade.overlap(brick, this.groundPhysicsGroup) || game.physics.arcade.overlap(brick, this.frozenPiecesPhysicsGroup)){
+                condicionDeRotacion=false;
+            }
         }
+        condicionDeRotacion=this.limitesLateralesPiezas(piezaRotar,condicionDeRotacion);
+
+        this.cargarPiece(piezaRotar,indOrg,orgX,orgY);
+
         return condicionDeRotacion;
     },
 
@@ -1022,17 +1024,15 @@ platformGameplayState.prototype = {
     },
 
     allowMove:function(piezaMove, dir){
-        var indOrg=new Array(4);
-        var orgX=new Array(4);
-        var orgY=new Array(4);
         var condicionDeMovimiento=true;
-        this.guardarPiece(piezaMove,indOrg,orgX,orgY);
 
         this.moveBrick(piezaMove,dir);
 
-        condicionDeMovimiento=this.limitesLateralesPiezas(piezaMove,condicionDeMovimiento);
-        
-        this.cargarPiece(piezaMove,indOrg,orgX,orgY);
+        if(!this.limitesLateralesPiezas(piezaMove,condicionDeMovimiento)){
+            condicionDeMovimiento=false;
+        }
+
+        this.moveBrick(piezaMove,-dir);
 
         return condicionDeMovimiento;
     },
