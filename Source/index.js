@@ -1,5 +1,5 @@
-var gameWidth = 800;
-var gameHeight  = 600;
+var gameWidth = 1280;
+var gameHeight  = 720;
 
 
 var game = new Phaser.Game(gameWidth, gameHeight, Phaser.AUTO, '')
@@ -8,6 +8,6 @@ var game = new Phaser.Game(gameWidth, gameHeight, Phaser.AUTO, '')
 game.state.add('bootState', bootState);
 game.state.add("mainMenuState", mainMenuState);
 game.state.add("platformGameplayState", platformGameplayState);
-game.state.add("platformPiezasState", platformPiezasState);
+//game.state.add("platformPiezasState", platformPiezasState);
   
 game.state.start('bootState');
