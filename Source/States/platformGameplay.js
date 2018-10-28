@@ -2,6 +2,13 @@ var platformGameplayState = function(game) {
 
 }
 
+var GameStates = {
+    PreGame : 0,
+    GameInProgress : 1,
+    PlayerLost : 2,
+    Draw : 3
+};
+
 ////////////////////
 //PLAYER VARIABLES//
 ////////////////////
@@ -35,8 +42,8 @@ var playerHitboxRightMargin = 90;
 var playerHitboxUpMargin = 60;
 var playerHitboxDownMargin = 3;
 
-var player1Color = 0xff0000;
-var player2Color = 0x00ff00;
+var player1Color = 0xff608b;
+var player2Color = 0xff9068;
 
 //Player input settings
 var player1JumpKey = Phaser.Keyboard.SPACEBAR;
@@ -49,7 +56,6 @@ var player2RightMoveKey = Phaser.Keyboard.RIGHT;
 
 //Player spawnpoints
 var playerSpawnDistanceFromCenterXFraction = 4;
-
 
 ////////////////////
 //TETRIS VARIABLES//
@@ -82,40 +88,55 @@ var player2PieceRight = Phaser.Keyboard.L;
 var player2PieceDown = Phaser.Keyboard.K;
 var player2PieceFreeze = Phaser.Keyboard.U;
 
-var GameStates = {
-    PreGame : 0,
-    GameInProgress : 1,
-    PlayerLost : 2,
-    Draw : 3
-};
-var currentGameState = GameStates.PreGame;
-var loserPlayer = null;
-var winnerPlayer = null;
+//Brick system
+var startingBrickPositionsArraySize = 3;
+var deleteCondition = 5;
 
 ///////////////
 //ENVIRONMENT//
 ///////////////
+
 var groundHeightInCubes = 5;
 
-//Array with positions of tetris bricks
-var positionsBricks = new Array(25);
-var deleteCondicionX=0;
-var deleteCondicionY=0;
-for(var i=0;i<=25;i++){
-    positionsBricks[i] = new Array();
-}
-
 //Camera
-var cameraAutoScrollSpeed = 0.23232322;
+var cameraAutoScrollSpeed = 0.3;
+var cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
+
+//Background
+var numberOfBackgrounds = 5;
+var backgroundParallaxFactor = 0.3;
+
 
 platformGameplayState.prototype = {
 
     preload: function() 
     {
         //Load sprites
-        game.load.image("suelo", "Assets/Sprites/TestGround.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetJ1.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
-        game.load.image("piece", "Assets/Sprites/cuboPrueba.png");
+        game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
+        game.load.image("piece", "Assets/Sprites/Bloque.png");
+
+        for (let i = 0; i < numberOfBackgrounds; i++)
+        {
+            game.load.image("background" + i, "Assets/EscenarioYFondos/Fondo" + i + ".png");
+        }
+
+        //Initialize a bunch of variables
+        //Game state
+        this.currentGameState = GameStates.PreGame;
+        this.loserPlayer = null;
+        this.winnerPlayer = null;
+
+        //Brick system
+        this.brickPositions = new Array(startingBrickPositionsArraySize);
+        for(let i=0;i < startingBrickPositionsArraySize; i++){
+            this.brickPositions[i] = new Array(startingBrickPositionsArraySize);
+        }
+
+        //Background system
+        this.freeBackgrounds = new Array(numberOfBackgrounds);
+        this.currentBackground;
+        this.queuedBackground;
     },    
 
     create: function() {
@@ -129,12 +150,14 @@ platformGameplayState.prototype = {
         game.camera.y = game.world.height;
         game.camera.roundPx = false;
 
+        this.initializeBackgrounds();
+
         //Physics initialization
         this.createPhysicGroups();
         
         //Create the ground
-        this.ground = this.createWall(0, game.world.height - scaledCubeSize * groundHeightInCubes, 5, 10);
-        //this.wall = this.createWall(600, 0, 1, 5);
+        //this.ground = this.createWall(0, game.world.height - scaledCubeSize * groundHeightInCubes, 5, 10);
+        this.ground = this.createGround();
 
         //Create the player
         var screenCenterX = gameWidth / 2;
@@ -170,6 +193,27 @@ platformGameplayState.prototype = {
         this.groundPhysicsGroup.add(wall);
 
         return wall;
+    },
+
+    createGround: function()
+    {
+        var ground = game.add.sprite(0, 0, "ground");
+        
+        //Positioning
+        ground.y = game.world.height - ground.height;
+
+        //Scaling
+
+        //Physics
+        game.physics.arcade.enable(ground);
+        ground.body.allowGravity = false;
+        ground.body.immovable = true;
+        ground.body.moves = false;
+        ground.body.enable = true;
+        ground.body.collideWorldBounds = true;
+        this.groundPhysicsGroup.add(ground);
+
+        return ground;
     },
 
     createPlayer: function(playerNumber, xPosition, yPosition)
@@ -254,7 +298,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza ,"piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza-scaledCubeSize, "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza-(2*scaledCubeSize), "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="L";
                     pieza.bricks[i].index=i;
                 }
@@ -267,7 +311,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza, "piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza+scaledCubeSize, Ypieza, "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza, Ypieza-scaledCubeSize, "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="T";
                     pieza.bricks[i].index=i;
                 }
@@ -281,7 +325,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza, Ypieza+scaledCubeSize, "piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza-scaledCubeSize, Ypieza+scaledCubeSize, "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza+scaledCubeSize, Ypieza, "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="Z";
                     pieza.bricks[i].index=i; 
                 }
@@ -294,7 +338,7 @@ platformGameplayState.prototype = {
                 pieza.bricks[1] = game.add.sprite(Xpieza, Ypieza-scaledCubeSize, "piece");
                 pieza.bricks[2] = game.add.sprite(Xpieza, Ypieza-(2*scaledCubeSize), "piece");
                 pieza.bricks[3] = game.add.sprite(Xpieza, Ypieza-(3*scaledCubeSize), "piece");
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].code="I";
                     pieza.bricks[i].index=i; 
                 }
@@ -311,7 +355,7 @@ platformGameplayState.prototype = {
         }
         
         //Brick initialization
-        for (var i = 0; i <= 3; i++) {
+        for (let i = 0; i <= 3; i++) {
             //Physics
             game.physics.arcade.enable(pieza.bricks[i]);
             pieza.bricks[i].body.allowGravity = false;
@@ -338,7 +382,7 @@ platformGameplayState.prototype = {
                 pieza.keyrightC=player1PieceRight;
                 pieza.keydownC=player1PieceDown;
                 pieza.allowRotate=true;
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].tint=player1Color;
                 }
 
@@ -350,7 +394,7 @@ platformGameplayState.prototype = {
                 pieza.keyrightC=player2PieceRight;
                 pieza.keydownC=player2PieceDown;
                 pieza.allowRotate=true;
-                for(var i=0;i<=3;i++){
+                for(let i=0;i<=3;i++){
                     pieza.bricks[i].tint=player2Color;
                 }
 
@@ -365,25 +409,28 @@ platformGameplayState.prototype = {
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
 
-        if (currentGameState == GameStates.PreGame)
+        if (this.currentGameState == GameStates.PreGame)
         {
-            currentGameState = GameStates.GameInProgress;
+            this.currentGameState = GameStates.GameInProgress;
         }
-        else if (currentGameState == GameStates.GameInProgress)
+        else 
         {
             //Player input
             this.reactToPlayerInput(this.player1);
             this.reactToPlayerInput(this.player2);
 
             //Tetris input
-            if (this.player1Piece) this.dirijirPieza(this.player1Piece);
-            if (this.player2Piece) this.dirijirPieza(this.player2Piece);
-
+            if (this.currentGameState == GameStates.GameInProgress)
+            {
+                if (this.player1Piece) this.dirijirPieza(this.player1Piece);
+                if (this.player2Piece) this.dirijirPieza(this.player2Piece);    
+            }
+        
             //Camera control
             this.updateCameraPosition();
 
             //Gamestate control
-            this.checkForGameEnd();
+            if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
         }
     },
 
@@ -395,10 +442,17 @@ platformGameplayState.prototype = {
         player.body.acceleration.y = 0;
         
         //Read the input
-        var rightInput = game.input.keyboard.isDown(player.rightMoveKey);
-        var leftInput = game.input.keyboard.isDown(player.leftMoveKey);
-        var jumpKey = game.input.keyboard.isDown(player.jumpKey);
+        var rightInput = false;
+        var leftInput = false;
+        var jumpKey = false;
 
+        if (this.currentGameState == GameStates.GameInProgress)
+        {
+            rightInput = game.input.keyboard.isDown(player.rightMoveKey);
+            leftInput = game.input.keyboard.isDown(player.leftMoveKey);
+            jumpKey = game.input.keyboard.isDown(player.jumpKey);
+        }
+        
         //Check if we will allow jump input 
         if (!player.liftedJumpKey)
         {
@@ -603,13 +657,13 @@ platformGameplayState.prototype = {
     
                 if (!leftKey.isDown) { piezaTetris.keyleft = false; }
                 if (leftKey.isDown && !piezaTetris.keyleft) {
-                    this.movePiece(piezaTetris, -1);
+                    this.attemptToMovePiece(piezaTetris, -1);
                     piezaTetris.keyleft = true;
                 }
     
                 if (!rightKey.isDown) { piezaTetris.keyright = false; }
                 if (rightKey.isDown && !piezaTetris.keyright) {
-                    this.movePiece(piezaTetris, 1);
+                    this.attemptToMovePiece(piezaTetris, 1);
                     piezaTetris.keyright = true;
                 }
                 piezaTetris.moveTimer++;
@@ -617,55 +671,120 @@ platformGameplayState.prototype = {
             else
             {
                 this.freezePiece(piezaTetris);
-                //this.lineTetris(piezaTetris);
             }
         }
     },
 
-    lineTetris: function(piezaTetris){
-        for(var i=0;i<4;i++){
-            this.lineBricks(piezaTetris.bricks[i]);
+    checkForBrickDestruction: function()
+    {
+        //Checking for columns
+        var currentGroupSize = 0;
+        for (let i = 0; i < this.brickPositions.length; i++)
+        {
+            for (let j = 0; j < this.brickPositions[i].length; j++)
+            {
+                var brick = this.getBrick(i, j);
+                var endGroup = false;
+                var groupEndIndex;
+                
+                //First null after group
+                if (!brick)
+                {
+                    endGroup = true;
+                    groupEndIndex = j - 1;
+                }
+                //End of the column
+                else if (j == this.brickPositions[i].length - 1)
+                {
+                    endGroup = true;
+                    groupEndIndex = j;
+                }
+                
+                //There is a brick here
+                if (brick) 
+                {
+                    currentGroupSize++;
+                }
+
+                //Check wether we need to destroy this group
+                if (endGroup && currentGroupSize != 0)
+                {
+                    if (currentGroupSize >= deleteCondition)
+                    {
+                        var groupStartJ = groupEndIndex - currentGroupSize + 1;
+                    
+                        for (let k = groupStartJ; k <= groupEndIndex; k++)
+                        {
+                            this.deleteBrick(i, k);
+                        }
+                    }    
+                    currentGroupSize = 0;
+                }
+            }
+        }
+
+        //Checking for rows
+        currentGroupSize = 0;
+        for (let j = 0; j < this.brickPositions[0].length; j++)
+        {
+            for (let i = 0; i < this.brickPositions.length; i++)
+            {
+                var brick = this.getBrick(i, j);
+                var endGroup = false;
+                var groupEndIndex;
+                
+                //First null after group
+                if (!brick)
+                {
+                    endGroup = true;
+                    groupEndIndex = i - 1;
+                }
+                //End of the row
+                else if (i == this.brickPositions.length - 1)
+                {
+                    endGroup = true;
+                    groupEndIndex = i;
+                }
+                
+                //There is a brick here
+                if (brick) 
+                {
+                    currentGroupSize++;
+                }
+
+                //Check wether we need to destroy this group
+                if (endGroup && currentGroupSize != 0)
+                {
+                    if (currentGroupSize >= deleteCondition)
+                    {
+                        var groupStartI = groupEndIndex - currentGroupSize + 1;
+                    
+                        for (let k = groupStartI; k <= groupEndIndex; k++)
+                        {
+                            this.deleteBrick(k, j);
+                        }
+                    }    
+                    currentGroupSize = 0;
+                }
+            }
         }
     },
 
-    lineBricks: function(brick){
-        var coordinates;
-        
-        coordinates = this.getGridCoordinates(brick.body.x,brick.body.y);
-        
-        positionsBricks[coordinates.x][coordinates.y]=brick;
-
-        for(var i=0;i<=25;i++){
-            if(positionsBricks[i][coordinates.y] != undefined ){
-                deleteCondicionX++;
-                if(deleteCondicionX>=5){
-                    for(var j=i-4;j<=i;j++){
-                        positionsBricks[j][coordinates.y].destroy();
-                        delete positionsBricks[j][coordinates.y];
-                        deleteCondicionX=0;
-                    }
-                }
-            }else{
-                deleteCondicionX=0;
-            }
+    deleteBrick: function(x, y)
+    {
+        var brick = this.getBrick(x, y);
+        if (brick)
+        {
+            brick.destroy();
+            this.brickPositions[x][y] = undefined;
         }
-        //mientras que la i sea menor que la parte superior de la pantalla?
 
-        /*if(positionsBricks[coordinates.x][i] != undefined ){
-            deleteCondicionY++;
-            if(deleteCondicion>=5){
-                for(var j=i-4;j<=i;j++){
-                    delete positionsBricks[coordinates.x][j];
-                }
-            }
-        }else{
-            deleteCondicionY=0;
-        }*/
+        
     },
     
     piezaTocandoSuelo: function(piezaTetris)
     {
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             var brick = piezaTetris.bricks[i];
 
@@ -695,171 +814,195 @@ platformGameplayState.prototype = {
 
     rotatePiece: function(piece)
     {
-        //var piezaRotar= Object.assign(piece);
-        //if(this.allowrotate(piezaRotar)){
-            for (i = 0; i < 4; i++)
-            {
-                var brick=piece.bricks[i];
-                this.rotateBrick(brick);
-            }
+        if(this.allowRotate(piece)){
+            this.rotateBrick(piece);
             if (this.piezaTocandoSuelo(piece)) piece.moveTimer = 0;
-        //}
+        }
     },
-    /*allowrotate:function(piece){
 
-        for (i = 0; i < 4; i++)
-        {
-            var brick=piece.bricks[i];
+    allowRotate:function(piezaRotar){
+        var indOrg=new Array(4);
+        var orgX=new Array(4);
+        var orgY=new Array(4);
+        
+        var condicionDeRotacion=true;
 
-            this.rotateBrick(brick);
-            if(game.physics.arcade.overlap(brick, this.groundPhysicsGroup)){
-                return false;
+        this.guardarPiece(piezaRotar,indOrg,orgX,orgY);
+
+        this.rotateBrick(piezaRotar);
+        for (let i = 0; i < 4; i++){
+            var brick = piezaRotar.bricks[i];
+            if(game.physics.arcade.overlap(brick, this.groundPhysicsGroup) || game.physics.arcade.overlap(brick, this.frozenPiecesPhysicsGroup)){
+                condicionDeRotacion=false;
             }
         }
-        return true;
-    },*/
-    rotateBrick:function(brick){ 
-        
-        switch(brick.code){
+        condicionDeRotacion=this.limitesLateralesPiezas(piezaRotar,condicionDeRotacion);
 
-            case "L":
-            //Rotación de L
-                if(brick.index==0){
-                    brick.body.x -= (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==1 || brick.index==11){
-                    brick.body.x -= scaledCubeSize;
-                    brick.body.y -= scaledCubeSize;
-                    brick.index += 4;
-                }else if(brick.index==3 || brick.index==9){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    brick.index+=4;
-                }else if(brick.index==4){
-                    brick.body.y -= (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==5 || brick.index==15){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y -= scaledCubeSize;
-                    if(brick.index==15){brick.index=3;}
-                    else{brick.index += 4;}
-                }else if(brick.index==7 || brick.index==13){
-                    brick.body.x -= scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    if(brick.index==13){brick.index=1;}
-                    else{brick.index+=4;}
-                }else if(brick.index==8){
-                    brick.body.x += (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==12){
-                    brick.index = 0;
-                    brick.body.y += (2*scaledCubeSize);
-                }
-            break;
-        
-            case "T":
-                //Rotacion de T
-                if(brick.index==1 || brick.index==10 || brick.index==15){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y -= scaledCubeSize;
-                    if(brick.index==15){brick.index=3;}
-                    else{brick.index += 4;}
-                }else if(brick.index==2 || brick.index==7 || brick.index==9){
-                    brick.body.x -= scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    brick.index += 4;
-                }else if(brick.index==3 || brick.index==5 || brick.index==14){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    if(brick.index==14){brick.index=2;}
-                    else{brick.index+=4;}
-                }else if(brick.index==6 || brick.index==11 || brick.index==13){
-                    brick.body.x -= scaledCubeSize;
-                    brick.body.y -= scaledCubeSize;
-                    if(brick.index==13){brick.index=1;}
-                    else{brick.index += 4;}
-                }
-            break;
+        this.cargarPiece(piezaRotar,indOrg,orgX,orgY);
 
-            case "Z":
-                //Rotación de Z
-                if(brick.index==1 ||brick.index==7){
-                    brick.body.x -= scaledCubeSize;
-                    brick.body.y -= scaledCubeSize;
-                    brick.index += 4;
-                }else if(brick.index==2){
-                    brick.body.y -= (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==3 || brick.index==13){
-                    brick.body.x -= scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    if(brick.index==3){brick.index+=4;}
-                    else {brick.index=1;}
-                }else if(brick.index==5 || brick.index==11){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y -= scaledCubeSize;
-                    brick.index += 4;
-                }else if(brick.index==6){
-                    brick.body.x += (2*scaledCubeSize);
-                    brick.index+=4;
-                }else if(brick.index==9 || brick.index==15){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    if(brick.index==9){brick.index+=4;}
-                    else {brick.index=3;}
-                }else if(brick.index==10){
-                    brick.body.y += (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==14){
-                    brick.index=2;
-                    brick.body.x -= (2*scaledCubeSize);
-                }
-        break;
-        
-        case "I":
-            //Rotación de I
-                if(brick.index==0){
-                    brick.body.x=brick.body.x - (2*scaledCubeSize);
-                    brick.body.y=brick.body.y - (2*scaledCubeSize);
-                    brick.index+=4;
-                }else if(brick.index==1 || brick.index==11){
-                    brick.body.x=brick.body.x -scaledCubeSize;
-                    brick.body.y=brick.body.y - scaledCubeSize;
-                    brick.index+=4;
-                }else if(brick.index==2 || brick.index==10 || brick.index==5 || brick.index==13){
-                    brick.body.x=brick.body.x;
-                    brick.body.y=brick.body.y;
-                    if(brick.index==13){brick.index=1;}
-                    else{brick.index+=4}
-                }else if(brick.index==3 || brick.index==9){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    brick.index+=4;
-                }else if(brick.index==4 || brick.index==14){
-                    brick.body.x += scaledCubeSize;
-                    brick.body.y=brick.body.y - scaledCubeSize;
-                    if(brick.index==4){brick.index+=4;}
-                    else{brick.index=2}
-                }else if(brick.index==6 || brick.index==12){
-                    brick.body.x=brick.body.x - scaledCubeSize;
-                    brick.body.y += scaledCubeSize;
-                    if(brick.index==6){brick.index+=4;}
-                    else{brick.index=0}
-                }else if(brick.index==7){
-                    brick.body.x=brick.body.x - (2*scaledCubeSize);
-                    brick.body.y += (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==8){
-                    brick.body.x += (2*scaledCubeSize);
-                    brick.body.y += (2*scaledCubeSize);
-                    brick.index += 4;
-                }else if(brick.index==15){
-                    brick.index=3;
-                    brick.body.x += (2*scaledCubeSize);
-                    brick.body.y -= (2*scaledCubeSize);
-                }
+        return condicionDeRotacion;
+    },
+
+    guardarPiece:function(piezaRotar,indOriginal,originalX,originalY){
+        for(var i=0;i<4;i++){
+            indOriginal[i]=piezaRotar.bricks[i].index;
+            originalX[i]=piezaRotar.bricks[i].body.x;
+            originalY[i]=piezaRotar.bricks[i].body.y;
+        }
+    },
+
+    cargarPiece:function(piezaRotar,indOriginal,originalX,originalY){
+        for(var i=0;i<4;i++){
+            piezaRotar.bricks[i].index=indOriginal[i];
+            piezaRotar.bricks[i].body.x=originalX[i];
+            piezaRotar.bricks[i].body.y=originalY[i];
+        }
+    },
+
+    rotateBrick:function(pieza){ 
+        for(var i=0;i<4;i++){
+
+        var brick=pieza.bricks[i];
+            switch(brick.code){
+
+                case "L":
+                //Rotación de L
+                    if(brick.index==0){
+                        brick.body.x -= (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==1 || brick.index==11){
+                        brick.body.x -= scaledCubeSize;
+                        brick.body.y -= scaledCubeSize;
+                        brick.index += 4;
+                    }else if(brick.index==3 || brick.index==9){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        brick.index+=4;
+                    }else if(brick.index==4){
+                        brick.body.y -= (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==5 || brick.index==15){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y -= scaledCubeSize;
+                        if(brick.index==15){brick.index=3;}
+                        else{brick.index += 4;}
+                    }else if(brick.index==7 || brick.index==13){
+                        brick.body.x -= scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        if(brick.index==13){brick.index=1;}
+                        else{brick.index+=4;}
+                    }else if(brick.index==8){
+                        brick.body.x += (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==12){
+                        brick.index = 0;
+                        brick.body.y += (2*scaledCubeSize);
+                    }
+                break;
+                
+                case "T":
+                    //Rotacion de T
+                    if(brick.index==1 || brick.index==10 || brick.index==15){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y -= scaledCubeSize;
+                        if(brick.index==15){brick.index=3;}
+                        else{brick.index += 4;}
+                    }else if(brick.index==2 || brick.index==7 || brick.index==9){
+                        brick.body.x -= scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        brick.index += 4;
+                    }else if(brick.index==3 || brick.index==5 || brick.index==14){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        if(brick.index==14){brick.index=2;}
+                        else{brick.index+=4;}
+                    }else if(brick.index==6 || brick.index==11 || brick.index==13){
+                        brick.body.x -= scaledCubeSize;
+                        brick.body.y -= scaledCubeSize;
+                        if(brick.index==13){brick.index=1;}
+                        else{brick.index += 4;}
+                    }
+                break;
+
+                case "Z":
+                    //Rotación de Z
+                    if(brick.index==1 ||brick.index==7){
+                        brick.body.x -= scaledCubeSize;
+                        brick.body.y -= scaledCubeSize;
+                        brick.index += 4;
+                    }else if(brick.index==2){
+                        brick.body.y -= (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==3 || brick.index==13){
+                        brick.body.x -= scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        if(brick.index==3){brick.index+=4;}
+                        else {brick.index=1;}
+                    }else if(brick.index==5 || brick.index==11){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y -= scaledCubeSize;
+                        brick.index += 4;
+                    }else if(brick.index==6){
+                        brick.body.x += (2*scaledCubeSize);
+                        brick.index+=4;
+                    }else if(brick.index==9 || brick.index==15){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        if(brick.index==9){brick.index+=4;}
+                        else {brick.index=3;}
+                    }else if(brick.index==10){
+                        brick.body.y += (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==14){
+                        brick.index=2;
+                        brick.body.x -= (2*scaledCubeSize);
+                    }
             break;
-        
+                
+            case "I":
+                //Rotación de I
+                    if(brick.index==0){
+                        brick.body.x=brick.body.x - (2*scaledCubeSize);
+                        brick.body.y=brick.body.y - (2*scaledCubeSize);
+                        brick.index+=4;
+                    }else if(brick.index==1 || brick.index==11){
+                        brick.body.x=brick.body.x -scaledCubeSize;
+                        brick.body.y=brick.body.y - scaledCubeSize;
+                        brick.index+=4;
+                    }else if(brick.index==2 || brick.index==10 || brick.index==5 || brick.index==13){
+                        brick.body.x=brick.body.x;
+                        brick.body.y=brick.body.y;
+                        if(brick.index==13){brick.index=1;}
+                        else{brick.index+=4}
+                    }else if(brick.index==3 || brick.index==9){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        brick.index+=4;
+                    }else if(brick.index==4 || brick.index==14){
+                        brick.body.x += scaledCubeSize;
+                        brick.body.y=brick.body.y - scaledCubeSize;
+                        if(brick.index==4){brick.index+=4;}
+                        else{brick.index=2}
+                    }else if(brick.index==6 || brick.index==12){
+                        brick.body.x=brick.body.x - scaledCubeSize;
+                        brick.body.y += scaledCubeSize;
+                        if(brick.index==6){brick.index+=4;}
+                        else{brick.index=0}
+                    }else if(brick.index==7){
+                        brick.body.x=brick.body.x - (2*scaledCubeSize);
+                        brick.body.y += (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==8){
+                        brick.body.x += (2*scaledCubeSize);
+                        brick.body.y += (2*scaledCubeSize);
+                        brick.index += 4;
+                    }else if(brick.index==15){
+                        brick.index=3;
+                        brick.body.x += (2*scaledCubeSize);
+                        brick.body.y -= (2*scaledCubeSize);
+                    }
+                break;
+            }
         }
     },
 
@@ -868,23 +1011,55 @@ platformGameplayState.prototype = {
         if (this.piezaTocandoSuelo(piezaTetris))
         {
             this.freezePiece(piezaTetris);
-            //this.lineTetris(piezaTetris);
         }
         else
         {
-            for (i = 0; i < 4; i++)
+            for (let i = 0; i < 4; i++)
             {
                 piezaTetris.bricks[i].body.y += scaledCubeSize;
             }
         }
     },
 
+    attemptToMovePiece: function(piezaTetris, direction)
+    {
+        if(this.allowMove(piezaTetris, direction)){
+            this.movePiece(piezaTetris, direction);
+        }
+    },
+
     movePiece: function(piezaTetris, direction)
     {
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             piezaTetris.bricks[i].body.x += direction * scaledCubeSize;
         }
+    },
+
+    allowMove:function(piezaMove, dir){
+        var condicionDeMovimiento=true;
+
+        this.movePiece(piezaMove,dir);
+
+        if(!this.limitesLateralesPiezas(piezaMove,condicionDeMovimiento)){
+            condicionDeMovimiento=false;
+        }
+
+        this.movePiece(piezaMove,-dir);
+
+        return condicionDeMovimiento;
+    },
+
+    limitesLateralesPiezas:function(piezaMove,condicion){
+        var rightLimit = gameWidth;
+        var leftLimit = -scaledCubeSize;
+        
+        for (let i = 0; i < 4; i++){
+            if(piezaMove.bricks[i].body.x>=rightLimit || piezaMove.bricks[i].body.x<=leftLimit){
+                condicion=false;
+            }
+        }
+        return condicion;
     },
 
     freezePiece: function(piezaTetris)
@@ -892,7 +1067,7 @@ platformGameplayState.prototype = {
         if (!this.pieceIsAllowedToFreeze(piezaTetris)) return;
 
         piezaTetris.frozen = true;
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             brick = piezaTetris.bricks[i];
 
@@ -904,12 +1079,49 @@ platformGameplayState.prototype = {
             this.frozenPiecesPhysicsGroup.add(brick);
             this.piecePhysicsGroup.remove(brick);
 
+            //Remember this brick's position
+            var brickPosition = this.getGridCoordinates(brick.x, brick.y);
+            this.saveBrick(brick, brickPosition.x, brickPosition.y);
+            
             //Sprite
             brick.alpha = 1;
         }
 
+        this.checkForBrickDestruction();
         setTimeout(this.nextPiece, nextPieceWaitTime, piezaTetris.playerNumber, this);
-        this.getGridCoordinates(piezaTetris.bricks[0].x, piezaTetris.bricks[0].y);
+    },
+
+    saveBrick: function(brick, x, y)
+    {
+        this.resizeBrickArrayIfNeeded(x, y);
+        this.brickPositions[x][y] = brick;
+    },
+
+    getBrick: function(x, y)
+    {
+        this.resizeBrickArrayIfNeeded(x, y);
+        return this.brickPositions[x][y];
+    },
+
+    resizeBrickArrayIfNeeded(x, y)
+    {
+        if (this.brickPositions.length <= x)
+        {
+            var originalLength = this.brickPositions.length;
+            this.brickPositions.length = x + 1;
+
+            for (let i = originalLength; i < this.brickPositions.length; i++)
+            {
+                this.brickPositions[i] = new Array(this.brickPositions[0].length);
+            }
+        }
+        if (this.brickPositions[0].length <= y)
+        {
+            for (let i = 0; i < this.brickPositions.length; i++)
+            {
+                this.brickPositions[i].length = y + 1;
+            }
+        }
     },
 
     nextPiece: function(playerNumber, stateObject)
@@ -919,7 +1131,13 @@ platformGameplayState.prototype = {
         screenCenterX -= screenCenterX % scaledCubeSize;
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
-        var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
+        
+        var y = game.camera.view.y + game.camera.view.height;
+        y -= y % scaledCubeSize;
+        y -= scaledCubeSize / 2;
+        y -= pieceSpawnScreenBottomMarginInCubes * scaledCubeSize;
+
+
         var piece = stateObject.createPiece(stateObject.randomPieceShape(), x, y, playerNumber);
 
         //Assign the piece
@@ -942,7 +1160,7 @@ platformGameplayState.prototype = {
     pieceIsAllowedToFreeze: function(piece)
     {
         var placeOccupied = false;
-        for (i = 0; i < 4; i++)
+        for (let i = 0; i < 4; i++)
         {
             if (game.physics.arcade.overlap(piece.bricks[i], this.frozenPiecesPhysicsGroup) ||
                 game.physics.arcade.overlap(piece.bricks[i], this.playerPhysicsGroup)
@@ -978,44 +1196,169 @@ platformGameplayState.prototype = {
 
     updateCameraPosition: function()
     {
-        game.camera.y -= cameraAutoScrollSpeed;
+        //See if we need to cath up
+        var cathupDistance;
+        var player1Overshoot = this.getPlayerScreenTopOvershoot(this.player1);
+        var player2Overshoot = this.getPlayerScreenTopOvershoot(this.player2);
+
+        if (player1Overshoot > player2Overshoot) cathupDistance = player1Overshoot;
+        else cathupDistance = player2Overshoot;
+
+        //Compute the needed speed
+        var addedSpeed = cathupDistance * cameraCatchupDistanceToSpeedIncreaseFactor;
+        var finalSpeed = cameraAutoScrollSpeed + addedSpeed;
+        game.camera.y -= finalSpeed;
+
+        this.updateBackgrounds(finalSpeed);
+    },
+
+    //Backgrounds
+    initializeBackgrounds: function()
+    {
+        for (let i = 0; i < numberOfBackgrounds; i++)
+        {
+            var background = game.add.sprite(0, 0, "background" + i);
+            background.visible = false;
+
+            //Scaling
+            background.anchor.x = 0;
+            background.anchor.y = 0;
+            var backgroundAspectRatio = background.height / background.width;
+            background.width = gameWidth;
+            background.height = gameWidth * backgroundAspectRatio;
+
+            this.freeBackgrounds[i] = background;
+        }
+        
+        //Queue two backgrounds. Force the first one as current, and the second one as queued
+        this.queueRandomBackground(true);
+        this.queueRandomBackground(false);
+    },
+    
+    queueRandomBackground: function(forceAsCurrent)
+    {
+        //Get the background
+        var backgroundIndex = game.rnd.integerInRange(0, this.freeBackgrounds.length - 1);
+        var background = this.freeBackgrounds[backgroundIndex];
+        this.freeBackgrounds.splice(backgroundIndex, 1);
+
+        //Get the height
+        var yPosition;
+        if (forceAsCurrent)
+        {
+            yPosition = game.camera.view.y;
+        }
+        else
+        {
+            yPosition = this.currentBackground.y - background.height;
+        }
+
+        //Activate it
+        background.visible = true;
+        background.x = 0;
+        background.y = yPosition;
+        
+        //Remember it
+        if (forceAsCurrent) this.currentBackground = background;
+        else this.queuedBackground = background;
+    },
+
+    updateBackgrounds: function(cameraHeightDelta)
+    {
+        //Move backgrounds
+        var backgroundHeightDelta = cameraHeightDelta * backgroundParallaxFactor;
+        this.currentBackground.y -= backgroundHeightDelta;
+        this.queuedBackground.y -= backgroundHeightDelta; 
+
+        //Check if it's time to queue a background
+        var swapTime = (this.currentBackground.y > game.camera.view.y + game.camera.view.height);
+
+        if (swapTime)
+        {
+            //Deactivate the current background
+            this.freeBackgrounds.push(this.currentBackground);
+            this.currentBackground.visible = false;
+
+            //Swap the backgrounds
+            this.currentBackground = this.queuedBackground;
+
+            //Queue a new background
+            this.queueRandomBackground(false);
+        }
+    },
+
+    //If it's zero, the player is BELOW the top of the screen
+    getPlayerScreenTopOvershoot: function(player)
+    {    
+        var difference = game.camera.view.y - player.y;
+        if (difference > 0)
+        {
+            //The player is over the top of the screen
+            return difference;
+        }
+        else 
+        {
+            //The player is not over the top of the screen
+            return 0;
+        }
     },
 
     checkForGameEnd: function()
     {
-        var player1Lost = !this.player1.inCamera;
-        var player2Lost = !this.player2.inCamera;
+        //are the players on screen?
+        var player1NotOnScreen = !this.player1.inCamera;
+        var player2NotOnScreen = !this.player2.inCamera;
+
+        //If a player is off-screen, are they below the top of the screen?
+        var player1Lost = false;
+        if (player1NotOnScreen && this.getPlayerScreenTopOvershoot(this.player1) == 0)
+        {
+            player1Lost = true;
+        }
+
+        var player2Lost = false;
+        if (player2NotOnScreen && this.getPlayerScreenTopOvershoot(this.player2) == 0)
+        {
+            player2Lost = true;
+        }
         
+        //Check if the game is over, and what the result is
         if (player1Lost && !player2Lost) 
         {
-            currentGameState = GameStates.PlayerLost;
-            winnerPlayer = this.player2;
-            loserPlayer = this.player1;
+            this.currentGameState = GameStates.PlayerLost;
+            this.winnerPlayer = this.player2;
+            this.loserPlayer = this.player1;
             this.announceGameEnd();
         }
         else if (player2Lost && !player1Lost)
         {
-            currentGameState = GameStates.PlayerLost;
-            winnerPlayer = this.player1;
-            loserPlayer = this.player2;
+            this.currentGameState = GameStates.PlayerLost;
+            this.winnerPlayer = this.player1;
+            this.loserPlayer = this.player2;
             this.announceGameEnd();
         }
         else if (player1Lost && player2Lost)
         {
-            currentGameState = GameStates.Draw;
+            this.currentGameState = GameStates.Draw;
             this.announceGameEnd();
         }
     },
 
     announceGameEnd: function()
     {
-        if (currentGameState == GameStates.PlayerLost)
+
+        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
+        var message = "";
+        if (this.currentGameState == GameStates.PlayerLost)
         {
-            var announcementText = game.stage.add.text(gameWidth / 2, gameHeight / 2, winnerPlayer.name + "wins!");
+            message = this.winnerPlayer.name + " wins!";
         }
-        else if (currentGameState == GameStates.Draw)
+        else if (this.currentGameState == GameStates.Draw)
         {
-            var announcementText = game.stage.add.text(gameWidth / 2, gameHeight / 2, "Everybody loses.");
+            message = "Everybody loses.";
         }
+        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
+        console.log(message);
+        announcementText.fixedToCamera = true;
     }   
 }
