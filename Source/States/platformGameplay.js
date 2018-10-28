@@ -2,6 +2,13 @@ var platformGameplayState = function(game) {
 
 }
 
+var GameStates = {
+    PreGame : 0,
+    GameInProgress : 1,
+    PlayerLost : 2,
+    Draw : 3
+};
+
 ////////////////////
 //PLAYER VARIABLES//
 ////////////////////
@@ -50,7 +57,6 @@ var player2RightMoveKey = Phaser.Keyboard.RIGHT;
 //Player spawnpoints
 var playerSpawnDistanceFromCenterXFraction = 4;
 
-
 ////////////////////
 //TETRIS VARIABLES//
 ////////////////////
@@ -82,29 +88,15 @@ var player2PieceRight = Phaser.Keyboard.L;
 var player2PieceDown = Phaser.Keyboard.K;
 var player2PieceFreeze = Phaser.Keyboard.U;
 
-var GameStates = {
-    PreGame : 0,
-    GameInProgress : 1,
-    PlayerLost : 2,
-    Draw : 3
-};
-var currentGameState = GameStates.PreGame;
-var loserPlayer = null;
-var winnerPlayer = null;
+//Brick system
+var startingBrickPositionsArraySize = 3;
+var deleteCondition = 5;
 
 ///////////////
 //ENVIRONMENT//
 ///////////////
+
 var groundHeightInCubes = 5;
-
-//Array with positions of tetris bricks
-var startingArraySize = 3;
-var brickPositions = new Array(startingArraySize); //
-var deleteCondition = 5;
-
-for(let i=0;i < startingArraySize; i++){
-    brickPositions[i] = new Array(startingArraySize);
-}
 
 //Camera
 var cameraAutoScrollSpeed = 0.3;
@@ -112,10 +104,6 @@ var cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
 
 //Background
 var numberOfBackgrounds = 5;
-var freeBackgrounds = new Array(numberOfBackgrounds);
-var currentBackground;
-var queuedBackground;
-
 var backgroundParallaxFactor = 0.3;
 
 
@@ -132,6 +120,23 @@ platformGameplayState.prototype = {
         {
             game.load.image("background" + i, "Assets/EscenarioYFondos/Fondo" + i + ".png");
         }
+
+        //Initialize a bunch of variables
+        //Game state
+        this.currentGameState = GameStates.PreGame;
+        this.loserPlayer = null;
+        this.winnerPlayer = null;
+
+        //Brick system
+        this.brickPositions = new Array(startingBrickPositionsArraySize);
+        for(let i=0;i < startingBrickPositionsArraySize; i++){
+            this.brickPositions[i] = new Array(startingBrickPositionsArraySize);
+        }
+
+        //Background system
+        this.freeBackgrounds = new Array(numberOfBackgrounds);
+        this.currentBackground;
+        this.queuedBackground;
     },    
 
     create: function() {
@@ -404,9 +409,9 @@ platformGameplayState.prototype = {
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
 
-        if (currentGameState == GameStates.PreGame)
+        if (this.currentGameState == GameStates.PreGame)
         {
-            currentGameState = GameStates.GameInProgress;
+            this.currentGameState = GameStates.GameInProgress;
         }
         else 
         {
@@ -415,7 +420,7 @@ platformGameplayState.prototype = {
             this.reactToPlayerInput(this.player2);
 
             //Tetris input
-            if (currentGameState == GameStates.GameInProgress)
+            if (this.currentGameState == GameStates.GameInProgress)
             {
                 if (this.player1Piece) this.dirijirPieza(this.player1Piece);
                 if (this.player2Piece) this.dirijirPieza(this.player2Piece);    
@@ -425,7 +430,7 @@ platformGameplayState.prototype = {
             this.updateCameraPosition();
 
             //Gamestate control
-            if (currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
+            if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
         }
     },
 
@@ -441,7 +446,7 @@ platformGameplayState.prototype = {
         var leftInput = false;
         var jumpKey = false;
 
-        if (currentGameState == GameStates.GameInProgress)
+        if (this.currentGameState == GameStates.GameInProgress)
         {
             rightInput = game.input.keyboard.isDown(player.rightMoveKey);
             leftInput = game.input.keyboard.isDown(player.leftMoveKey);
@@ -674,9 +679,9 @@ platformGameplayState.prototype = {
     {
         //Checking for columns
         var currentGroupSize = 0;
-        for (let i = 0; i < brickPositions.length; i++)
+        for (let i = 0; i < this.brickPositions.length; i++)
         {
-            for (let j = 0; j < brickPositions[i].length; j++)
+            for (let j = 0; j < this.brickPositions[i].length; j++)
             {
                 var brick = this.getBrick(i, j);
                 var endGroup = false;
@@ -689,7 +694,7 @@ platformGameplayState.prototype = {
                     groupEndIndex = j - 1;
                 }
                 //End of the column
-                else if (j == brickPositions[i].length - 1)
+                else if (j == this.brickPositions[i].length - 1)
                 {
                     endGroup = true;
                     groupEndIndex = j;
@@ -720,9 +725,9 @@ platformGameplayState.prototype = {
 
         //Checking for rows
         currentGroupSize = 0;
-        for (let j = 0; j < brickPositions[0].length; j++)
+        for (let j = 0; j < this.brickPositions[0].length; j++)
         {
-            for (let i = 0; i < brickPositions.length; i++)
+            for (let i = 0; i < this.brickPositions.length; i++)
             {
                 var brick = this.getBrick(i, j);
                 var endGroup = false;
@@ -735,7 +740,7 @@ platformGameplayState.prototype = {
                     groupEndIndex = i - 1;
                 }
                 //End of the row
-                else if (i == brickPositions.length - 1)
+                else if (i == this.brickPositions.length - 1)
                 {
                     endGroup = true;
                     groupEndIndex = i;
@@ -771,7 +776,7 @@ platformGameplayState.prototype = {
         if (brick)
         {
             brick.destroy();
-            brickPositions[x][y] = undefined;
+            this.brickPositions[x][y] = undefined;
         }
 
         
@@ -1089,32 +1094,32 @@ platformGameplayState.prototype = {
     saveBrick: function(brick, x, y)
     {
         this.resizeBrickArrayIfNeeded(x, y);
-        brickPositions[x][y] = brick;
+        this.brickPositions[x][y] = brick;
     },
 
     getBrick: function(x, y)
     {
         this.resizeBrickArrayIfNeeded(x, y);
-        return brickPositions[x][y];
+        return this.brickPositions[x][y];
     },
 
     resizeBrickArrayIfNeeded(x, y)
     {
-        if (brickPositions.length <= x)
+        if (this.brickPositions.length <= x)
         {
-            var originalLength = brickPositions.length;
-            brickPositions.length = x + 1;
+            var originalLength = this.brickPositions.length;
+            this.brickPositions.length = x + 1;
 
-            for (let i = originalLength; i < brickPositions.length; i++)
+            for (let i = originalLength; i < this.brickPositions.length; i++)
             {
-                brickPositions[i] = new Array(brickPositions[0].length);
+                this.brickPositions[i] = new Array(this.brickPositions[0].length);
             }
         }
-        if (brickPositions[0].length <= y)
+        if (this.brickPositions[0].length <= y)
         {
-            for (let i = 0; i < brickPositions.length; i++)
+            for (let i = 0; i < this.brickPositions.length; i++)
             {
-                brickPositions[i].length = y + 1;
+                this.brickPositions[i].length = y + 1;
             }
         }
     },
@@ -1222,7 +1227,7 @@ platformGameplayState.prototype = {
             background.width = gameWidth;
             background.height = gameWidth * backgroundAspectRatio;
 
-            freeBackgrounds[i] = background;
+            this.freeBackgrounds[i] = background;
         }
         
         //Queue two backgrounds. Force the first one as current, and the second one as queued
@@ -1233,9 +1238,9 @@ platformGameplayState.prototype = {
     queueRandomBackground: function(forceAsCurrent)
     {
         //Get the background
-        var backgroundIndex = game.rnd.integerInRange(0, freeBackgrounds.length - 1);
-        var background = freeBackgrounds[backgroundIndex];
-        freeBackgrounds.splice(backgroundIndex, 1);
+        var backgroundIndex = game.rnd.integerInRange(0, this.freeBackgrounds.length - 1);
+        var background = this.freeBackgrounds[backgroundIndex];
+        this.freeBackgrounds.splice(backgroundIndex, 1);
 
         //Get the height
         var yPosition;
@@ -1245,7 +1250,7 @@ platformGameplayState.prototype = {
         }
         else
         {
-            yPosition = currentBackground.y - background.height;
+            yPosition = this.currentBackground.y - background.height;
         }
 
         //Activate it
@@ -1254,28 +1259,28 @@ platformGameplayState.prototype = {
         background.y = yPosition;
         
         //Remember it
-        if (forceAsCurrent) currentBackground = background;
-        else queuedBackground = background;
+        if (forceAsCurrent) this.currentBackground = background;
+        else this.queuedBackground = background;
     },
 
     updateBackgrounds: function(cameraHeightDelta)
     {
         //Move backgrounds
         var backgroundHeightDelta = cameraHeightDelta * backgroundParallaxFactor;
-        currentBackground.y -= backgroundHeightDelta;
-        queuedBackground.y -= backgroundHeightDelta; 
+        this.currentBackground.y -= backgroundHeightDelta;
+        this.queuedBackground.y -= backgroundHeightDelta; 
 
         //Check if it's time to queue a background
-        var swapTime = (currentBackground.y > game.camera.view.y + game.camera.view.height);
+        var swapTime = (this.currentBackground.y > game.camera.view.y + game.camera.view.height);
 
         if (swapTime)
         {
             //Deactivate the current background
-            freeBackgrounds.push(currentBackground);
-            currentBackground.visible = false;
+            this.freeBackgrounds.push(this.currentBackground);
+            this.currentBackground.visible = false;
 
             //Swap the backgrounds
-            currentBackground = queuedBackground;
+            this.currentBackground = this.queuedBackground;
 
             //Queue a new background
             this.queueRandomBackground(false);
@@ -1320,21 +1325,21 @@ platformGameplayState.prototype = {
         //Check if the game is over, and what the result is
         if (player1Lost && !player2Lost) 
         {
-            currentGameState = GameStates.PlayerLost;
-            winnerPlayer = this.player2;
-            loserPlayer = this.player1;
+            this.currentGameState = GameStates.PlayerLost;
+            this.winnerPlayer = this.player2;
+            this.loserPlayer = this.player1;
             this.announceGameEnd();
         }
         else if (player2Lost && !player1Lost)
         {
-            currentGameState = GameStates.PlayerLost;
-            winnerPlayer = this.player1;
-            loserPlayer = this.player2;
+            this.currentGameState = GameStates.PlayerLost;
+            this.winnerPlayer = this.player1;
+            this.loserPlayer = this.player2;
             this.announceGameEnd();
         }
         else if (player1Lost && player2Lost)
         {
-            currentGameState = GameStates.Draw;
+            this.currentGameState = GameStates.Draw;
             this.announceGameEnd();
         }
     },
@@ -1344,11 +1349,11 @@ platformGameplayState.prototype = {
 
         var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
         var message = "";
-        if (currentGameState == GameStates.PlayerLost)
+        if (this.currentGameState == GameStates.PlayerLost)
         {
-            message = winnerPlayer.name + " wins!";
+            message = this.winnerPlayer.name + " wins!";
         }
-        else if (currentGameState == GameStates.Draw)
+        else if (this.currentGameState == GameStates.Draw)
         {
             message = "Everybody loses.";
         }
