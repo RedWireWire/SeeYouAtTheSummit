@@ -139,6 +139,7 @@ platformGameplayState.prototype = {
         this.queuedBackground;
     },    
 
+    //Creation
     create: function() {
         //Background
         this.stage.backgroundColor = 0x333333;
@@ -403,6 +404,7 @@ platformGameplayState.prototype = {
         return pieza;
     },
 
+
     update: function() {
         
         //Collisions
@@ -431,6 +433,11 @@ platformGameplayState.prototype = {
 
             //Gamestate control
             if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
+        }
+
+        if (this.currentGameState == GameStates.PlayerLost || this.currentGameState == GameStates.Draw)
+        {
+            this.checkForBackToMenu();
         }
     },
 
@@ -1194,6 +1201,7 @@ platformGameplayState.prototype = {
         };
     },
 
+
     updateCameraPosition: function()
     {
         //See if we need to cath up
@@ -1303,6 +1311,9 @@ platformGameplayState.prototype = {
         }
     },
 
+    //////////////
+    //GAME STATE//
+    //////////////
     checkForGameEnd: function()
     {
         //are the players on screen?
@@ -1360,5 +1371,13 @@ platformGameplayState.prototype = {
         var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
         console.log(message);
         announcementText.fixedToCamera = true;
-    }   
+    },
+    
+    checkForBackToMenu: function()
+    {
+        if (game.input.keyboard.isDown(Phaser.Keyboard.ESC) || game.input.keyboard.isDown(Phaser.Keyboard.ENTER))
+        {
+            game.state.start("mainMenuState");
+        }
+    }
 }

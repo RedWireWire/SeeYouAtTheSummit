@@ -16,6 +16,20 @@ var maxCloudSpriteScaleVariance = 0.2;
 var nominalCloudMoveSpeed = 0.4;
 var maxCloudMoveSpeedVariance = 0.3;
 
+//Title 
+var titleSpriteScale = 0.6;
+var titleHeightRelativeToBackground = 0.6;
+var titleFadeOffsetInMiliseconds = 2000;
+var titleFadeDuration = 3000;
+
+//Start 
+var startSpriteScale = 1;
+var startHeightRelativeToBackground = 0.2;
+var startFadeOffsetInMiliseconds = 5000;
+var startFadeDuration = 3000;
+
+//Input
+var gameStartKey = Phaser.Keyboard.ENTER;
 
 mainMenuState.prototype = {
 
@@ -32,9 +46,17 @@ mainMenuState.prototype = {
 
     create: function() {
         
+        //Background
         game.stage.backgroundColor = mainMenuBackgroundColor;
         this.background = this.createBackground();
 
+        //Title
+        this.title = this.createTitle();
+
+        //Start message
+        this.startMessage = this.createStartMessage();
+
+        //Clouds
         for (let i = 0; i < numberOfClouds; i++)
         {
             this.createCloud(true);
@@ -57,6 +79,50 @@ mainMenuState.prototype = {
         background.height = gameWidth * aspectRatio;
 
         return background;
+    },
+
+    createTitle: function()
+    {
+        var title = game.add.sprite(0, 0, "title");
+
+        //Scaling
+        title.anchor.x = 0.5;
+        title.anchor.y = 0.5
+        title.scale.x = titleSpriteScale;
+        title.scale.y = titleSpriteScale;
+
+        //Positioning
+        title.x = gameWidth / 2;
+        title.y = gameHeight - this.background.height * titleHeightRelativeToBackground;
+
+        //Fading
+        title.alpha = 0;
+        title.fadeStartTime = game.time.now + titleFadeOffsetInMiliseconds;
+        title.fadeEndTime = title.fadeStartTime + titleFadeDuration;
+        
+        return title;
+    },
+
+    createStartMessage: function()
+    {
+        var start = game.add.sprite(0, 0, "pressEnter");
+
+        //Scaling
+        start.anchor.x = 0.5;
+        start.anchor.y = 0.5
+        start.scale.x = startSpriteScale;
+        start.scale.y = startSpriteScale;
+
+        //Positioning
+        start.x = gameWidth / 2;
+        start.y = gameHeight - this.background.height * startHeightRelativeToBackground;
+
+        //Fading
+        start.alpha = 0;
+        start.fadeStartTime = game.time.now + startFadeOffsetInMiliseconds;
+        start.fadeEndTime = start.fadeStartTime + startFadeDuration;
+        
+        return start;
     },
 
     createCloud: function(startOnScreen)
@@ -88,7 +154,6 @@ mainMenuState.prototype = {
             var maxX = gameWidth;
             var minX = 0;
             cloud.x = game.rnd.realInRange(minX, maxX);
-            console.log("Creating onscreen")
         }
         else
         {
@@ -115,6 +180,50 @@ mainMenuState.prototype = {
     },
 
     update: function() {
+        this.checkForGameStart();
+        this.updateTitleFade();
+        this.updateStartMessageFade();
+        this.updateClouds();
+    },
+
+    updateTitleFade: function()
+    {
+        var now = game.time.now;
+
+        if (now > this.title.fadeStartTime)
+        {
+            if (now < this.title.fadeEndTime)
+            {
+                var progress = (now - this.title.fadeStartTime) / (titleFadeDuration);
+                this.title.alpha = progress;
+            }
+            else
+            {
+                this.title.alpha = 1;
+            }
+        }
+    },
+
+    updateStartMessageFade: function()
+    {
+        var now = game.time.now;
+
+        if (now > this.startMessage.fadeStartTime)
+        {
+            if (now < this.startMessage.fadeEndTime)
+            {
+                var progress = (now - this.startMessage.fadeStartTime) / (startFadeDuration);
+                this.startMessage.alpha = progress;
+            }
+            else
+            {
+                this.startMessage.alpha = 1;
+            }
+        }
+    },
+
+    updateClouds: function()
+    {
         //Move the clouds
         for (let i = 0; i < this.clouds.length; i++)
         {
@@ -135,6 +244,14 @@ mainMenuState.prototype = {
             {
                 this.replaceCloud(cloud);
             }
+        }
+    },
+
+    checkForGameStart: function()
+    {
+        if (game.input.keyboard.isDown(gameStartKey))
+        {
+            game.state.start("platformGameplayState");
         }
     }
 }
