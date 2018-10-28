@@ -38,7 +38,7 @@ mainMenuState.prototype = {
         game.load.image("cloud", "Assets/MainMenu/NubeMenuPrincipal.png");
         game.load.image("title", "Assets/MainMenu/TituloDeJuego.png");
         game.load.image("pressEnter", "Assets/MainMenu/PressEnter.png");
-        game.load.image("menuBackground", "Assets/MainMenu/FondoMenuPrincipal.png");
+        game.load.image("menuBackground", "Assets/MainMenu/FondoMenuPrincipalSinCielo.png");
 
         //Initialize variables
         this.clouds = new Array(0);
@@ -46,6 +46,9 @@ mainMenuState.prototype = {
 
     create: function() {
         
+        //Use for sorting
+        this.group = game.add.group();
+
         //Background
         game.stage.backgroundColor = mainMenuBackgroundColor;
         this.background = this.createBackground();
@@ -61,17 +64,20 @@ mainMenuState.prototype = {
         {
             this.createCloud(true);
         }
+
+        this.group.sort("renderOrder", Phaser.Group.SORT_ASCENDING);
     },
 
     createBackground: function()
     {
-        var background = game.add.image(0, 0, "menuBackground");
+        var background = this.group.create(0, 0, "menuBackground");
         
         //Placement
         background.anchor.x = 0;
         background.anchor.y = 1;
         background.x = 0;
         background.y = gameHeight;
+        background.renderOrder = 0;
         
         //Scaling
         var aspectRatio = background.height / background.width;
@@ -83,7 +89,7 @@ mainMenuState.prototype = {
 
     createTitle: function()
     {
-        var title = game.add.sprite(0, 0, "title");
+        var title = this.group.create(0, 0, "title");
 
         //Scaling
         title.anchor.x = 0.5;
@@ -94,6 +100,7 @@ mainMenuState.prototype = {
         //Positioning
         title.x = gameWidth / 2;
         title.y = gameHeight - this.background.height * titleHeightRelativeToBackground;
+        title.renderOrder = 2;
 
         //Fading
         title.alpha = 0;
@@ -105,7 +112,7 @@ mainMenuState.prototype = {
 
     createStartMessage: function()
     {
-        var start = game.add.sprite(0, 0, "pressEnter");
+        var start = this.group.create(0, 0, "pressEnter");
 
         //Scaling
         start.anchor.x = 0.5;
@@ -116,6 +123,7 @@ mainMenuState.prototype = {
         //Positioning
         start.x = gameWidth / 2;
         start.y = gameHeight - this.background.height * startHeightRelativeToBackground;
+        start.renderOrder = 2;
 
         //Fading
         start.alpha = 0;
@@ -127,7 +135,7 @@ mainMenuState.prototype = {
 
     createCloud: function(startOnScreen)
     {
-        var cloud = game.add.sprite(0, 0, "cloud");
+        var cloud = this.group.create(0, 0, "cloud");
         var signArray = [-1, 1];
 
         //Scaling
@@ -165,6 +173,9 @@ mainMenuState.prototype = {
             cloud.x = screenMarginX - movementDirection * Math.abs(cloud.width); 
         }
     
+        //Layering
+        cloud.renderOrder = game.rnd.pick(signArray);
+
         //Save the cloud
         this.clouds.push(cloud);
 
@@ -177,6 +188,7 @@ mainMenuState.prototype = {
         this.clouds.splice(index, 1);
         this.createCloud(false);
         cloud.destroy();
+        this.group.sort("renderOrder", Phaser.Group.SORT_ASCENDING);
     },
 
     update: function() {
