@@ -105,13 +105,6 @@ var deleteCondition = 5;
 for(let i=0;i < startingArraySize; i++){
     brickPositions[i] = new Array(startingArraySize);
 }
-//Límites del mapa,
-var rightlimit=1280;
-var leftlimit=-30;
-
-var currentHighestColumnSize = 0;
-
-var currentHighestColumnSize = 0;
 
 //Camera
 var cameraAutoScrollSpeed = 0.3;
@@ -122,7 +115,7 @@ platformGameplayState.prototype = {
     preload: function() 
     {
         //Load sprites
-        game.load.image("suelo", "Assets/Sprites/TestGround.png");
+        game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
     },    
@@ -142,8 +135,8 @@ platformGameplayState.prototype = {
         this.createPhysicGroups();
         
         //Create the ground
-        this.ground = this.createWall(0, game.world.height - scaledCubeSize * groundHeightInCubes, 5, 10);
-        //this.wall = this.createWall(600, 0, 1, 5);
+        //this.ground = this.createWall(0, game.world.height - scaledCubeSize * groundHeightInCubes, 5, 10);
+        this.ground = this.createGround();
 
         //Create the player
         var screenCenterX = gameWidth / 2;
@@ -179,6 +172,27 @@ platformGameplayState.prototype = {
         this.groundPhysicsGroup.add(wall);
 
         return wall;
+    },
+
+    createGround: function()
+    {
+        var ground = game.add.sprite(0, 0, "ground");
+        
+        //Positioning
+        ground.y = game.world.height - ground.height;
+
+        //Scaling
+
+        //Physics
+        game.physics.arcade.enable(ground);
+        ground.body.allowGravity = false;
+        ground.body.immovable = true;
+        ground.body.moves = false;
+        ground.body.enable = true;
+        ground.body.collideWorldBounds = true;
+        this.groundPhysicsGroup.add(ground);
+
+        return ground;
     },
 
     createPlayer: function(playerNumber, xPosition, yPosition)
@@ -1016,8 +1030,11 @@ platformGameplayState.prototype = {
     },
 
     limitesLateralesPiezas:function(piezaMove,condicion){
+        var rightLimit = gameWidth;
+        var leftLimit = -scaledCubeSize;
+        
         for (let i = 0; i < 4; i++){
-            if(piezaMove.bricks[i].body.x>=rightlimit || piezaMove.bricks[i].body.x<=leftlimit){
+            if(piezaMove.bricks[i].body.x>=rightLimit || piezaMove.bricks[i].body.x<=leftLimit){
                 condicion=false;
             }
         }
