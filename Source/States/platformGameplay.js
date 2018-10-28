@@ -110,6 +110,15 @@ for(let i=0;i < startingArraySize; i++){
 var cameraAutoScrollSpeed = 0.3;
 var cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
 
+//Background
+var numberOfBackgrounds = 5;
+var freeBackgrounds = new Array(numberOfBackgrounds);
+var currentBackground;
+var queuedBackground;
+
+var backgroundParallaxFactor = 0.3;
+
+
 platformGameplayState.prototype = {
 
     preload: function() 
@@ -118,6 +127,11 @@ platformGameplayState.prototype = {
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
+
+        for (let i = 0; i < numberOfBackgrounds; i++)
+        {
+            game.load.image("background" + i, "Assets/EscenarioYFondos/Fondo" + i + ".png");
+        }
     },    
 
     create: function() {
@@ -130,6 +144,8 @@ platformGameplayState.prototype = {
         //Camera initialization
         game.camera.y = game.world.height;
         game.camera.roundPx = false;
+
+        this.initializeBackgrounds();
 
         //Physics initialization
         this.createPhysicGroups();
@@ -1110,10 +1126,7 @@ platformGameplayState.prototype = {
         screenCenterX -= screenCenterX % scaledCubeSize;
 
         var x = screenCenterX + ((playerNumber == 1) ? -1 : 1) * pieceSpawnXFromCenterInCubes * scaledCubeSize + scaledCubeSize / 2;
-        //var y = game.camera.bounds.bottom - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize - scaledCubeSize / 2;
-        //var y = ((game.camera.view.y + game.camera - game.camera.view.min.y % scaledCubeSize) - pieceSpawnScreenBottomMarginInCubes * scaledCubeSize;
-
-
+        
         var y = game.camera.view.y + game.camera.view.height;
         y -= y % scaledCubeSize;
         y -= scaledCubeSize / 2;
@@ -1188,8 +1201,85 @@ platformGameplayState.prototype = {
 
         //Compute the needed speed
         var addedSpeed = cathupDistance * cameraCatchupDistanceToSpeedIncreaseFactor;
+        var finalSpeed = cameraAutoScrollSpeed + addedSpeed;
+        game.camera.y -= finalSpeed;
 
-        game.camera.y -= cameraAutoScrollSpeed + addedSpeed;
+        this.updateBackgrounds(finalSpeed);
+    },
+
+    //Backgrounds
+    initializeBackgrounds: function()
+    {
+        for (let i = 0; i < numberOfBackgrounds; i++)
+        {
+            var background = game.add.sprite(0, 0, "background" + i);
+            background.visible = false;
+
+            //Scaling
+            background.anchor.x = 0;
+            background.anchor.y = 0;
+            var backgroundAspectRatio = background.height / background.width;
+            background.width = gameWidth;
+            background.height = gameWidth * backgroundAspectRatio;
+
+            freeBackgrounds[i] = background;
+        }
+        
+        //Queue two backgrounds. Force the first one as current, and the second one as queued
+        this.queueRandomBackground(true);
+        this.queueRandomBackground(false);
+    },
+    
+    queueRandomBackground: function(forceAsCurrent)
+    {
+        //Get the background
+        var backgroundIndex = game.rnd.integerInRange(0, freeBackgrounds.length - 1);
+        var background = freeBackgrounds[backgroundIndex];
+        freeBackgrounds.splice(backgroundIndex, 1);
+
+        //Get the height
+        var yPosition;
+        if (forceAsCurrent)
+        {
+            yPosition = game.camera.view.y;
+        }
+        else
+        {
+            yPosition = currentBackground.y - background.height;
+        }
+
+        //Activate it
+        background.visible = true;
+        background.x = 0;
+        background.y = yPosition;
+        
+        //Remember it
+        if (forceAsCurrent) currentBackground = background;
+        else queuedBackground = background;
+    },
+
+    updateBackgrounds: function(cameraHeightDelta)
+    {
+        //Move backgrounds
+        var backgroundHeightDelta = cameraHeightDelta * backgroundParallaxFactor;
+        currentBackground.y -= backgroundHeightDelta;
+        queuedBackground.y -= backgroundHeightDelta; 
+
+        //Check if it's time to queue a background
+        var swapTime = (currentBackground.y > game.camera.view.y + game.camera.view.height);
+
+        if (swapTime)
+        {
+            //Deactivate the current background
+            freeBackgrounds.push(currentBackground);
+            currentBackground.visible = false;
+
+            //Swap the backgrounds
+            currentBackground = queuedBackground;
+
+            //Queue a new background
+            this.queueRandomBackground(false);
+        }
     },
 
     //If it's zero, the player is BELOW the top of the screen
