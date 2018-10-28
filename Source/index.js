@@ -8,6 +8,5 @@ var game = new Phaser.Game(gameWidth, gameHeight, Phaser.AUTO, '')
 game.state.add('bootState', bootState);
 game.state.add("mainMenuState", mainMenuState);
 game.state.add("platformGameplayState", platformGameplayState);
-//game.state.add("platformPiezasState", platformPiezasState);
   
 game.state.start('bootState');
