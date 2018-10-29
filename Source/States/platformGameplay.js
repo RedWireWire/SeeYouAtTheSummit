@@ -284,6 +284,8 @@ platformGameplayState.prototype = {
         return player;
     },
 
+    //Función donde se crean las distintas piezas del juego.
+    //Recibe la forma de la pieza la posición de esta y a que jugador va a ir asociada.
     createPiece: function(estilo,Xpieza,Ypieza,playerNumber){
         
         var pieza = new Object();
@@ -403,7 +405,6 @@ platformGameplayState.prototype = {
         }
         return pieza;
     },
-
 
     update: function() {
         
@@ -654,20 +655,20 @@ platformGameplayState.prototype = {
                     piezaTetris.moveTimer = 0;
                 }
     
-                //forzar el bajar
+                //Forzar el bajar
                 if (!downKey.isDown) { piezaTetris.keydown = false; }
                 if (downKey.isDown && !piezaTetris.keydown) {
                     this.lowerPiece(piezaTetris);
                     piezaTetris.keydown = true;
                     piezaTetris.moveTimer = 0;
                 }
-    
+                //Mover pieza a la izquierda.
                 if (!leftKey.isDown) { piezaTetris.keyleft = false; }
                 if (leftKey.isDown && !piezaTetris.keyleft) {
                     this.attemptToMovePiece(piezaTetris, -1);
                     piezaTetris.keyleft = true;
                 }
-    
+                //Mover pieza a la derecha.
                 if (!rightKey.isDown) { piezaTetris.keyright = false; }
                 if (rightKey.isDown && !piezaTetris.keyright) {
                     this.attemptToMovePiece(piezaTetris, 1);
@@ -789,15 +790,18 @@ platformGameplayState.prototype = {
         
     },
     
+    //Función que devuelve true si la pieza está colisionando con el suelo y false si no.
+    //Recibe la pieza.
     piezaTocandoSuelo: function(piezaTetris)
     {
         for (let i = 0; i < 4; i++)
         {
+            //Separo las piezas en diferentes ladrillos para tratarlos por separado.
             var brick = piezaTetris.bricks[i];
 
             //Desactivo moviento para manipularla.
             brick.body.moves = false;
-            
+            //Guardo su y original.
             var originalY = brick.body.y;
             
             brick.body.y += scaledCubeSize;
@@ -809,7 +813,7 @@ platformGameplayState.prototype = {
             if(!tocandoSuelo){
                 tocandoSuelo = game.physics.arcade.overlap(brick, this.frozenPiecesPhysicsGroup);
             }
-
+            //Restauro su y.
             brick.body.y = originalY;
             brick.body.moves = true;
 
@@ -819,15 +823,22 @@ platformGameplayState.prototype = {
         return false;
     },
 
+    //Función que rota la pieza.
+    //Recibe la pieza a rotar.
     rotatePiece: function(piece)
     {
+        //Comprueba si la pieza se puede rotar, si se puede lo hace.
         if(this.allowRotate(piece)){
             this.rotateBrick(piece);
+            //Se pone el temporizador de caida de la pieza a 0.
             if (this.piezaTocandoSuelo(piece)) piece.moveTimer = 0;
         }
     },
 
+    //Función que devuelve true se la pieza puede rotar.
+    //Recibe la pieza a rotar.
     allowRotate:function(piezaRotar){
+        //Declaración de arrays donde se guardarán los parámetros originales de las piezas.
         var indOrg=new Array(4);
         var orgX=new Array(4);
         var orgY=new Array(4);
@@ -835,14 +846,17 @@ platformGameplayState.prototype = {
         var condicionDeRotacion=true;
 
         this.guardarPiece(piezaRotar,indOrg,orgX,orgY);
-
+        //Rota la pieza.
         this.rotateBrick(piezaRotar);
         for (let i = 0; i < 4; i++){
+            //Separo las piezas en diferentes ladrillos para tratarlos por separado.
             var brick = piezaRotar.bricks[i];
+            //Compruebo si alguno de los ladrillos está colisionando o bien con el suelo o con alguna de las piezas, si lo está haciendo no permito rotar.
             if(game.physics.arcade.overlap(brick, this.groundPhysicsGroup) || game.physics.arcade.overlap(brick, this.frozenPiecesPhysicsGroup)){
                 condicionDeRotacion=false;
             }
         }
+        //Compruebo si alguno de los ladrillos está fuera de los límites del mapa.
         condicionDeRotacion=this.limitesLateralesPiezas(piezaRotar,condicionDeRotacion);
 
         this.cargarPiece(piezaRotar,indOrg,orgX,orgY);
@@ -850,6 +864,7 @@ platformGameplayState.prototype = {
         return condicionDeRotacion;
     },
 
+    //Función que recibe la pieza y ciertos arrays para guardar los parámetros originales de las piezas.
     guardarPiece:function(piezaRotar,indOriginal,originalX,originalY){
         for(var i=0;i<4;i++){
             indOriginal[i]=piezaRotar.bricks[i].index;
@@ -858,6 +873,7 @@ platformGameplayState.prototype = {
         }
     },
 
+    //Función que recibe la pieza y ciertos arrays (que poseen los parámetros originales de las piezas) para asignarlos a los parámetros de las piezas.
     cargarPiece:function(piezaRotar,indOriginal,originalX,originalY){
         for(var i=0;i<4;i++){
             piezaRotar.bricks[i].index=indOriginal[i];
@@ -866,6 +882,7 @@ platformGameplayState.prototype = {
         }
     },
 
+    //Función que recibe la pieza la separa en ladrillos y rota cada uno de esos ladrillos.
     rotateBrick:function(pieza){ 
         for(var i=0;i<4;i++){
 
@@ -1013,8 +1030,10 @@ platformGameplayState.prototype = {
         }
     },
 
+    //Función que recibe la pieza e incrementa su y para que la pieza baje.
     lowerPiece:function(piezaTetris)
     {
+        //Comprueba si la pieza está colisionando con el suelo.
         if (this.piezaTocandoSuelo(piezaTetris))
         {
             this.freezePiece(piezaTetris);
@@ -1035,6 +1054,7 @@ platformGameplayState.prototype = {
         }
     },
 
+    //Función que recibe la pieza y una dirección y mueve la pieza una posición en la dirección indicada
     movePiece: function(piezaTetris, direction)
     {
         for (let i = 0; i < 4; i++)
@@ -1043,20 +1063,24 @@ platformGameplayState.prototype = {
         }
     },
 
+    //Función que recibe la pieza y una dirección, devuelve true si la pieza se puede mover.
     allowMove:function(piezaMove, dir){
         var condicionDeMovimiento=true;
 
+        //Muevo la pieza en la dirección deseada.
         this.movePiece(piezaMove,dir);
 
+        //Compruebo sino está fuera de los limites del mapa, si lo está devuelvo false.
         if(!this.limitesLateralesPiezas(piezaMove,condicionDeMovimiento)){
             condicionDeMovimiento=false;
         }
-
+        //Vuelvo a dejar la pieza en su posición.
         this.movePiece(piezaMove,-dir);
 
         return condicionDeMovimiento;
     },
 
+    //Función que recibe una condición de movimiento y la pieza, devuelve true si la pieza no está fuera de los límites del mapa y por tanto se puede mover.
     limitesLateralesPiezas:function(piezaMove,condicion){
         var rightLimit = gameWidth;
         var leftLimit = -scaledCubeSize;
@@ -1069,8 +1093,10 @@ platformGameplayState.prototype = {
         return condicion;
     },
 
+    //Función que recibe la pieza y la detiene en la posición en la que esté.
     freezePiece: function(piezaTetris)
     {
+        //Comprueba si la pieza se puede detener en el sitio en el que esté.
         if (!this.pieceIsAllowedToFreeze(piezaTetris)) return;
 
         piezaTetris.frozen = true;
@@ -1159,6 +1185,7 @@ platformGameplayState.prototype = {
         }
     },
 
+    //Función que devuelve un número aleatorio entre 1 y 5.
     randomPieceShape: function()
     {
         return game.rnd.integerInRange(1, 5);
