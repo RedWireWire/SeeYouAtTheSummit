@@ -427,6 +427,8 @@ platformGameplayState.prototype = {
             {
                 if (this.player1Piece) this.dirijirPieza(this.player1Piece);
                 if (this.player2Piece) this.dirijirPieza(this.player2Piece);    
+
+                this.updateScore();
             }
         
             //Camera control
@@ -440,6 +442,40 @@ platformGameplayState.prototype = {
         {
             this.checkForBackToMenu();
         }
+    },
+
+    updateScore: function()
+    {
+        var newScore = game.world.height - game.camera.y - groundHeightInCubes * scaledCubeSize;
+        newScore = Math.round(newScore / scaledCubeSize);
+        //console.log(newScore);
+
+        
+        var path = "/score";
+        var queryData = newScore.toString();
+        
+        
+        //$.post(path, queryData, function() { console.log("yes")});
+        
+        $.ajax(
+            path,
+            {
+                type: "post",
+                data: queryData,
+                success: function() { console.log("Success");},
+                error: function() { console.log("Error");}
+            }
+        );
+        
+        /*
+        var data = newScore;
+        $.post(path, 0, function()
+        {
+            console.log("Done, I think");
+        })
+        */
+
+
     },
 
     //PLAYER MOVEMENT
@@ -1398,6 +1434,21 @@ platformGameplayState.prototype = {
         var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
         console.log(message);
         announcementText.fixedToCamera = true;
+        this.getCurrentScore();
+    },
+
+
+    getCurrentScore: function()
+    {
+        var path = "/score";
+        $.ajax(
+            path,
+            {
+                type: "get",
+                success: function(data) { console.log(data);},
+                error: function() { console.log("Error");}
+            }
+        );
     },
     
     checkForBackToMenu: function()
