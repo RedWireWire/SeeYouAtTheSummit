@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 public class PlayerController {
 
 	private String currentScore = "0";
+	private Player currentTest;
 	
 	@GetMapping(value = "/score")
 	public ResponseEntity<String> GetScore()
@@ -22,6 +23,20 @@ public class PlayerController {
 	public ResponseEntity<Boolean> SetScore(@RequestBody String newScore)
 	{
 		currentScore = newScore;
+		return new ResponseEntity<Boolean>(true, HttpStatus.ACCEPTED);
+	}
+	
+	@GetMapping(value = "/test")
+	public ResponseEntity<Player> GetTest()
+	{
+		return new ResponseEntity<Player>(currentTest, HttpStatus.ACCEPTED);
+	}
+	
+	@PostMapping(value = "/test")
+	public ResponseEntity<Boolean> SetTest(@RequestBody Player newScore)
+	{
+		System.out.println(newScore.playerID);
+		currentTest = newScore;
 		return new ResponseEntity<Boolean>(true, HttpStatus.ACCEPTED);
 	}
 	

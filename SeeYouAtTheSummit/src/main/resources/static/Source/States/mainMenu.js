@@ -66,6 +66,8 @@ mainMenuState.prototype = {
         }
 
         this.group.sort("renderOrder", Phaser.Group.SORT_ASCENDING);
+
+        this.testRest();
     },
 
     createBackground: function()
@@ -265,5 +267,22 @@ mainMenuState.prototype = {
         {
             game.state.start("platformGameplayState");
         }
+    },
+
+    testRest: function()
+    {
+        var object = JSON.stringify({playerID: 11});
+        $.ajax("/test", 
+        {
+            method: "POST",
+            data: object,
+            processData: false,
+            
+            success: function() { console.log("yes");},
+            
+            headers:{
+                "Content-Type": "application/json"
+            },
+        });
     }
 }
