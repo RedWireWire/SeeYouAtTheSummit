@@ -9,6 +9,50 @@ var GameStates = {
     Draw : 3
 };
 
+////////////////////
+//PLAYER VARIABLES//
+////////////////////
+//Player movement parameters
+var gravityStrength = 50;
+
+var playerJumpStrength = 1000;
+var playerJumpLeeway = 15;
+
+var playerWallGrabLeeway = 10;
+var wallJumpYComponentFactor = 0.7;
+var wallJumpXComponentFactor = 0.5;
+
+var playerMoveAcceleration = 1200;
+var playerMaxHorizontalSpeed = 500;
+var playerHorizontalDrag = 20;
+
+var playerAirborneAccelFactor = 0.4;
+var playerAirborneDragFactor = 0.1;
+
+//Player sprite settings
+var playerUnscaledSpriteWidth = 250;
+var playerUnscaledSpriteHeight = 200;
+var playerSpriteScale = 0.5;
+
+var playerSpriteCenterX = 0.47;
+var playerSpriteCenterY = 0.5;
+
+var playerHitboxLeftMargin = 75;
+var playerHitboxRightMargin = 90;
+var playerHitboxUpMargin = 60;
+var playerHitboxDownMargin = 3;
+
+var player1Color = 0xff608b;
+var player2Color = 0xff9068;
+
+//Player input settings
+var player1JumpKey = Phaser.Keyboard.SPACEBAR;
+var player1LeftMoveKey = Phaser.Keyboard.A;
+var player1RightMoveKey = Phaser.Keyboard.D;
+
+var player2JumpKey = Phaser.Keyboard.UP;
+var player2LeftMoveKey = Phaser.Keyboard.LEFT;
+var player2RightMoveKey = Phaser.Keyboard.RIGHT;
 
 //Player spawnpoints
 var playerSpawnDistanceFromCenterXFraction = 4;
@@ -69,7 +113,7 @@ platformGameplayState.prototype = {
     {
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", playerUnscaledSpriteWidth, playerUnscaledSpriteHeight, 10);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
 
         for (let i = 0; i < numberOfBackgrounds; i++)
@@ -119,8 +163,8 @@ platformGameplayState.prototype = {
         //Create the player
         var screenCenterX = gameWidth / 2;
         var playerSpawnDistanceFromCenterX = gameWidth / playerSpawnDistanceFromCenterXFraction;
-        this.player1 = game.createPlayer(1, screenCenterX - playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup);
-        this.player2 = game.createPlayer(2, screenCenterX + playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup);
+        this.player1 = this.createPlayer(1, screenCenterX - playerSpawnDistanceFromCenterX, this.ground.y - 100);
+        this.player2 = this.createPlayer(2, screenCenterX + playerSpawnDistanceFromCenterX, this.ground.y - 100);
 
         //Player pieces
         this.nextPiece(1, this);
@@ -173,7 +217,72 @@ platformGameplayState.prototype = {
         return ground;
     },
 
+    createPlayer: function(playerNumber, xPosition, yPosition)
+    {
+        //Sprite
+        player = game.add.sprite(xPosition, yPosition, "playerSpriteSheet");
+        player.name = "Player " + playerNumber;
+        switch (playerNumber)
+        {
+            case 1:
+                player.tint = player1Color;
+                break;
+            case 2:
+                player.tint = player2Color;
+            break;
+            default:
+                console.log("Unsupported player number " + playerNumber);
+        }
+        
+        //Animation
+        player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
+        player.animations.add("idle", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 9, 8, 9, 8], 4, true);
+        player.animations.add("jump", [6], 1, true);
+        player.animations.add("grabWall", [7], 1, true);
     
+        //Scaling
+        player.anchor.setTo(playerSpriteCenterX, playerSpriteCenterY);
+        player.scale.x = playerSpriteScale;
+        player.scale.y = playerSpriteScale;
+
+        //Physics
+        game.physics.arcade.enable(player);
+        player.body.allowGravity = false;     //We'll use our own gravity
+        player.body.drag = 0;                 //We'll use our own drag
+        player.body.enable = true;
+
+        player.body.maxVelocity.x = playerMaxHorizontalSpeed;
+        player.body.drag.x = playerHorizontalDrag;
+
+        this.playerPhysicsGroup.add(player);
+
+        //Hitbox
+        player.body.setSize(
+            playerUnscaledSpriteWidth - playerHitboxLeftMargin - playerHitboxRightMargin,
+            playerUnscaledSpriteHeight - playerHitboxUpMargin - playerHitboxDownMargin,
+            playerHitboxLeftMargin,
+            playerHitboxUpMargin
+        );
+
+        //Input variables
+        switch (playerNumber)
+        {
+            case 1:
+                player.jumpKey = player1JumpKey;
+                player.leftMoveKey = player1LeftMoveKey;
+                player.rightMoveKey = player1RightMoveKey;
+                break;
+            case 2:
+                player.jumpKey = player2JumpKey;
+                player.leftMoveKey = player2LeftMoveKey;
+                player.rightMoveKey = player2RightMoveKey;
+                break;
+        }
+
+        player.liftedJumpKey = true;
+
+        return player;
+    },
 
     //Función donde se crean las distintas piezas del juego.
     //Recibe la forma de la pieza la posición de esta y a que jugador va a ir asociada.
