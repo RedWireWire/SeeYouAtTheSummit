@@ -1,4 +1,4 @@
-var platformGameplayState = function(game) {
+var localMultiplayerState = function(game) {
 
 }
 
@@ -9,7 +9,7 @@ var GameStates = {
     Draw : 3
 };
 
-platformGameplayState.prototype = {
+localMultiplayerState.prototype = {
 
     preload: function() 
     {

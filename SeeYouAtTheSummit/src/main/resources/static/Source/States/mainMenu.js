@@ -265,7 +265,8 @@ mainMenuState.prototype = {
     {
         if (game.input.keyboard.isDown(gameStartKey))
         {
-            game.state.start("platformGameplayState");
+            game.state.start("onlineMultiplayerState");
+            //game.state.start("localMultiplayerState");
         }
     },
 
