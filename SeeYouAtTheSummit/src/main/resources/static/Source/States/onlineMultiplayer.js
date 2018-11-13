@@ -32,7 +32,6 @@ onlineMultiplayerState.prototype = {
         game.loadBackgrounds();
     },    
 
-
     create: function() {
         game.setupLevel(this);
 
@@ -54,7 +53,8 @@ onlineMultiplayerState.prototype = {
             (this.controlledPlayerNumber == 1) ? player1x : player2x,
             this.ground.y - 100,
             this.playerPhysicsGroup,
-            true
+            true, 
+            game.ControlSchemes.NotShared
         );
         this.controlledPlayer.playerNumber = this.controlledPlayerNumber;
 
@@ -68,8 +68,9 @@ onlineMultiplayerState.prototype = {
         );
         this.onlineSyncedPlayer.playerNumber = opponentNumber;
 
-        //Player pieces
-        game.nextPiece(this.controlledPlayerNumber, this);
+        //Player piece
+        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
+            function(state, piece) { state.controlledPiece = piece});
     },
 
     update: function() {
@@ -96,7 +97,7 @@ onlineMultiplayerState.prototype = {
             //Tetris input
             if (this.currentGameState == this.GameStates.GameInProgress)
             {
-                if (this.player1Piece) game.directPiece(this.player1Piece, this);
+                if (this.controlledPiece) game.directPiece(this.controlledPiece, this);
             }
         
             //Camera control
@@ -112,6 +113,7 @@ onlineMultiplayerState.prototype = {
             this.checkForBackToMenu();
         }
     },
+
 
 
     //TMP

@@ -43,12 +43,12 @@ localMultiplayerState.prototype = {
         //Create the players
         var screenCenterX = gameWidth / 2;
         var playerSpawnDistanceFromCenterX = gameWidth / game.playerSpawnDistanceFromCenterXFraction;
-        this.player1 = game.createPlayer(1, screenCenterX - playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup);
-        this.player2 = game.createPlayer(2, screenCenterX + playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup);
+        this.player1 = game.createPlayer(1, screenCenterX - playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup, true, game.ControlSchemes.Shared1);
+        this.player2 = game.createPlayer(2, screenCenterX + playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup, true, game.ControlSchemes.Shared2);
 
         //Player pieces
-        game.nextPiece(1, this);
-        game.nextPiece(2, this);
+        game.nextPiece(1, this, player1.controlScheme);
+        game.nextPiece(2, this, player2.controlScheme);
     },
 
     update: function() {

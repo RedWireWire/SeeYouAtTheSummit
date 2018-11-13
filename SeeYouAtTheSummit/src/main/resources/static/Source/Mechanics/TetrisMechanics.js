@@ -15,26 +15,13 @@ game.pieceSpawnXFromCenterInCubes = 5;
 game.autoDescendTime = 45;
 game.nextPieceWaitTime = 2000;  //In miliseconds
 
-//Player piece input
-game.player1PieceRotate = Phaser.Keyboard.T;
-game.player1PieceLeft = Phaser.Keyboard.F;
-game.player1PieceRight = Phaser.Keyboard.H;
-game.player1PieceDown = Phaser.Keyboard.G;
-game.player1PieceFreeze = Phaser.Keyboard.R;
-
-game.player2PieceRotate = Phaser.Keyboard.I;
-game.player2PieceLeft = Phaser.Keyboard.J;
-game.player2PieceRight = Phaser.Keyboard.L;
-game.player2PieceDown = Phaser.Keyboard.K;
-game.player2PieceFreeze = Phaser.Keyboard.U;
-
 //Brick system
 game.startingBrickPositionsArraySize = 3;
 game.deleteCondition = 5;
 
 
 //Creation
-game.nextPiece = function(playerNumber, state)
+game.nextPiece = function(playerNumber, state, controlScheme, savingFunction)
 {
     //Create the piece
     var screenCenterX = gameWidth / 2;
@@ -48,21 +35,13 @@ game.nextPiece = function(playerNumber, state)
     y -= game.pieceSpawnScreenBottomMarginInCubes * game.scaledCubeSize;
 
 
-    var piece = game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup);
-
+    var piece = game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme);
+    piece.savingFunction = savingFunction;
     //Assign the piece
-    switch (playerNumber)
-    {
-        case 1: 
-            state.player1Piece = piece;
-            break;
-        case 2:
-            state.player2Piece = piece;
-            break;
-    }
+    savingFunction(state, piece);
 }
 
-game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup)
+game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup, controlScheme)
 {
     var pieza = new Object();
     pieza.playerNumber = playerNumber;
@@ -151,34 +130,26 @@ game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup
     }
     
     pieza.moveTimer = 0;
-    //Input variables
+    
+    //Color
     switch (playerNumber)
     {
         case 1:
-            pieza.keyrotateC=game.player1PieceRotate;
-            pieza.keyfreezeC=game.player1PieceFreeze;
-            pieza.keyleftC=game.player1PieceLeft;
-            pieza.keyrightC=game.player1PieceRight;
-            pieza.keydownC=game.player1PieceDown;
             pieza.allowRotate=true;
             for(let i=0;i<=3;i++){
                 pieza.bricks[i].tint=game.player1Color;
             }
-
             break;
         case 2:
-            pieza.keyrotateC=game.player2PieceRotate;
-            pieza.keyfreezeC=game.player2PieceFreeze;
-            pieza.keyleftC=game.player2PieceLeft;
-            pieza.keyrightC=game.player2PieceRight;
-            pieza.keydownC=game.player2PieceDown;
             pieza.allowRotate=true;
             for(let i=0;i<=3;i++){
                 pieza.bricks[i].tint=game.player2Color;
             }
-
             break;
     }
+
+    //Input
+    pieza.controlScheme = controlScheme;
     return pieza;
 }
 
@@ -191,11 +162,11 @@ game.randomPieceShape = function()
 game.directPiece = function(piezaTetris, state)
 {
     //Entrada por teclado.
-    enterKey = game.input.keyboard.addKey(piezaTetris.keyfreezeC);
-    Rkey = game.input.keyboard.addKey(piezaTetris.keyrotateC);
-    downKey = game.input.keyboard.addKey(piezaTetris.keydownC);
-    leftKey = game.input.keyboard.addKey(piezaTetris.keyleftC);
-    rightKey = game.input.keyboard.addKey(piezaTetris.keyrightC);
+    enterKey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceFreeze);
+    Rkey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceRotate);
+    downKey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceDown);
+    leftKey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceLeft);
+    rightKey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceRight);
 
     if (!piezaTetris.frozen)
     {
@@ -536,7 +507,7 @@ game.freezePiece = function(piece, state)
     }
 
     game.checkForBrickDestruction(state.brickPositions);
-    setTimeout(game.nextPiece, game.nextPieceWaitTime, piece.playerNumber, state);
+    setTimeout(game.nextPiece, game.nextPieceWaitTime, piece.playerNumber, state, piece.controlScheme, piece.savingFunction);
 }
 
 game.pieceIsAllowedToFreeze = function(piece, state)
