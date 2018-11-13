@@ -8,7 +8,9 @@ public class Match {
 	private Player player2;
 	
 	private boolean isReady = false; 
+	private boolean hasStarted = false;
 	
+	//Registering
 	public int GetOpenPosition()
 	{
 		if (player1 == null) return 1;
@@ -21,6 +23,7 @@ public class Match {
 		return isReady;
 	}
 	
+	//Player management
 	public Player GetPlayerById(int id)
 	{
 		if (id == 1) return player1;
@@ -32,8 +35,6 @@ public class Match {
 		if (id==1) player1 = player;
 		else player2 = player;
 		
-		player.playerID = id;
-		
 		if (IsFull())
 		{
 			isReady = true;
@@ -44,6 +45,18 @@ public class Match {
 		}
 	}
 	
+ 	
+ 	//Match start
+ 	public boolean BothAreInAcceptance()
+ 	{
+ 		if (player1.inAcceptance && player2.inAcceptance)
+ 		{
+ 			hasStarted = true;
+ 			return true;
+ 		}
+ 		else return false;
+ 	}
+ 	
  	
  	private boolean IsFull()
 	{

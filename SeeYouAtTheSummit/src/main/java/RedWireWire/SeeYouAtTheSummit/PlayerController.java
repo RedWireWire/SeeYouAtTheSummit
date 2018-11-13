@@ -74,6 +74,16 @@ public class PlayerController {
 	}
 
 	
+	//Match start
+	@PutMapping(value = "/acceptance/{matchId}")
+	public boolean SetAcceptance(@PathVariable int matchId, @RequestBody PlayerAcceptance player)
+	{
+		//Set the acceptance for the player, and return true if both are now in acceptance
+		
+		return true;
+		//System.out.println("test: " + playerId);
+		//matches[]
+	}
 	
 	//Matchmaking utilities
 	private MatchRegisterResult FindOpenMatch()
@@ -97,6 +107,7 @@ public class PlayerController {
 		return null;
 	}
 	
+
 	private MatchRegisterResult CreateMatch() throws IndexOutOfBoundsException
 	{
 		for (int i = 0; i  < matches.length; i++)
@@ -113,68 +124,8 @@ public class PlayerController {
 	}
 	
 	
-	/*
-	private String currentScore = "0";
-	private Player currentTest;
 	
-	@GetMapping(value = "/score")
-	public ResponseEntity<String> GetScore()
-	{
-		return new ResponseEntity<String>(currentScore, HttpStatus.ACCEPTED);
-	}
-	
-	@PostMapping(value = "/score")
-	public ResponseEntity<Boolean> SetScore(@RequestBody String newScore)
-	{
-		currentScore = newScore;
-		return new ResponseEntity<Boolean>(true, HttpStatus.ACCEPTED);
-	}
-	
-	@GetMapping(value = "/test")
-	public ResponseEntity<Player> GetTest()
-	{
-		return new ResponseEntity<Player>(currentTest, HttpStatus.ACCEPTED);
-	}
-	
-	@PostMapping(value = "/test")
-	public ResponseEntity<Boolean> SetTest(@RequestBody Player newScore)
-	{
-		System.out.println(newScore.playerID);
-		currentTest = newScore;
-		return new ResponseEntity<Boolean>(true, HttpStatus.ACCEPTED);
-	}
-	
-	/*
-	public List<Player> players = new ArrayList<>();
-
-	@GetMapping(value = "/players")
-	public List<Player> GetPlayers()
-	{
-		return players;
-	}
-	@PostMapping(value = "/players")
-	public ResponseEntity<Integer> AddPlayer(@RequestBody Player newPlayer)
-	{
-		players.add(newPlayer);
-		newPlayer.playerID = players.size() - 1;
-		return new ResponseEntity<Integer>(newPlayer.playerID, HttpStatus.CREATED);
-	}
-
-	
-	
-	@GetMapping(value = "/playerpositionx/{playerID}")
-	public ResponseEntity<Integer> GetPlayerXPosition(@PathVariable int playerID)
-	{
-		return new ResponseEntity<Integer>(players.get(playerID).xPosition, HttpStatus.CREATED);
-	}
-	
-	@PutMapping(value = "/playerpositionx/{playerID}")
-	public ResponseEntity<Boolean> SetPlayerXPosition(@PathVariable int playerID, RequestBody int newXPosition)
-	{
-		players.get(playerID).xPosition = newXPosition;
-	}
-	*/
-	
+	//Input types
 	private class MatchRegisterResult
 	{
 		public int matchId;
@@ -187,6 +138,8 @@ public class PlayerController {
 		}
 	}
 }
+
+
 
 
 

@@ -81,7 +81,23 @@ onlineMultiplayerState.prototype = {
         //Pregame state
         if (this.currentGameState == this.GameStates.PreGame)
         {
-            this.currentGameState = this.GameStates.GameInProgress;
+            $.ajax(
+                "/acceptance/" + matchId,
+                {
+                    method: "PUT",
+                    data: JSON.stringify({
+                        playerId: playerId,
+                        isInAcceptance: true
+                    }),
+                    processData: false,
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    success: function(data) { console.log(data);}
+                }
+            )
+
         }
         //Gameplay state
         else 
