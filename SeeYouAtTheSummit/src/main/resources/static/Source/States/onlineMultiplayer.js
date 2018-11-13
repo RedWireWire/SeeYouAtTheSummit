@@ -13,7 +13,7 @@ onlineMultiplayerState.prototype = {
     },
 
     //This identifier will be provided by the server
-    controlledPlayerNumber: 1,
+    controlledPlayerNumber,
 
     //Initialization
     preload: function() 
@@ -49,17 +49,17 @@ onlineMultiplayerState.prototype = {
         var player1x = screenCenterX - playerSpawnDistanceFromCenterX;
         var player2x = screenCenterX + playerSpawnDistanceFromCenterX;
 
-        this.controlledPlayer = game.createPlayer(this.controlledPlayerNumber, 
-            (this.controlledPlayerNumber == 1) ? player1x : player2x,
+        this.controlledPlayer = game.createPlayer(controlledPlayerNumber, 
+            (controlledPlayerNumber == 1) ? player1x : player2x,
             this.ground.y - 100,
             this.playerPhysicsGroup,
             true, 
             game.ControlSchemes.NotShared
         );
-        this.controlledPlayer.playerNumber = this.controlledPlayerNumber;
+        this.controlledPlayer.playerNumber = controlledPlayerNumber;
 
         //The number that isn't the player's
-        var opponentNumber = (this.controlledPlayerNumber == 1) ? 2 : 1;
+        var opponentNumber = (controlledPlayerNumber == 1) ? 2 : 1;
         this.onlineSyncedPlayer = game.createPlayer(opponentNumber,
             (opponentNumber == 1) ? player1x : player2x,
             this.ground.y - 100,
@@ -69,7 +69,7 @@ onlineMultiplayerState.prototype = {
         this.onlineSyncedPlayer.playerNumber = opponentNumber;
 
         //Player piece
-        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
+        game.nextPiece(controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
             function(state, piece) { state.controlledPiece = piece});
     },
 

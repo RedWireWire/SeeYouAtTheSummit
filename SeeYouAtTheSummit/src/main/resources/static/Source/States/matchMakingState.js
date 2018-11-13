@@ -2,6 +2,7 @@ var matchMakingState = function(game) {
 
 }
 
+var controlledPlayerNumber;
 matchMakingState.prototype = {
 
     //Enables some skipping functionality for testing
@@ -20,12 +21,12 @@ matchMakingState.prototype = {
         {
             if (game.input.keyboard.isDown(Phaser.Keyboard.ONE))
             {
-                onlineMultiplayerState.controlledPlayerNumber = 1;
+                controlledPlayerNumber = 1;
                 game.state.start("onlineMultiplayerState");
             }
             else if (game.input.keyboard.isDown(Phaser.Keyboard.TWO))
             {
-                onlineMultiplayerState.controlledPlayerNumber = 2;
+                controlledPlayerNumber = 2;
                 game.state.start("onlineMultiplayerState");
             }
             else if (game.input.keyboard.isDown(Phaser.Keyboard.THREE))
