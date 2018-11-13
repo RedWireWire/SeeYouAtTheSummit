@@ -3,21 +3,23 @@ var matchMakingState = function(game) {
 }
 
 var matchId;
-var controlledPlayerNumber;
+var playerId;
+
 matchMakingState.prototype = {
 
     //Enables some skipping functionality for testing
     allowShortcuts: true,
 
     preload: function() {
-        
+        this.registered = false;
     },
 
     create: function() {
         if (this.allowShortcuts) this.showMatchMakingShortcuts();
     },
 
-    beenUp: true,
+    //TMP
+    
     update: function() {
         if (this.allowShortcuts)
         {
@@ -46,8 +48,14 @@ matchMakingState.prototype = {
             }
         }
         
+        if (matchMakingState.registered)
+        {
+            this.pollMatchFullness(matchId)
+        }
     },
 
+    //Menu
+    beenUp: true,
     showMatchMakingShortcuts: function()
     {
         var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
@@ -57,10 +65,12 @@ matchMakingState.prototype = {
         console.log(message);
     },
 
+
+    //AJAX requests
     attemptToJoinMatch: function()
     {
         $.ajax(
-            "match",
+            "/match",
             {
                 method: "POST",
                 
@@ -72,33 +82,59 @@ matchMakingState.prototype = {
     leaveMatch: function()
     {   
         $.ajax(
-            "match",
+            "/match",
             {
                 method: "DELETE",
+                data: {
+                    matchId: matchId,
+                    playerId: playerId
+                },
                 success: this.unregisterFromMatch
             }
         )
     },
 
+    pollMatchFullness: function(matchId)
+    {
+        $.ajax(
+            "/match/" + matchId,
+            {
+                method: "GET",
+                success: function(matchIsFull) { if (matchIsFull) matchMakingState.prototype.goToGameplay();}
+            }
+        )
+    },
+
+    goToGameplay: function()
+    {
+        game.state.start("onlineMultiplayerState");
+    },
+
+    //Registration callbacks
     registerMatchId: function(result)
     {
         if (result.matchId != -1 && result.playerId != -1)
         {
-            onlineMultiplayerState.controlledPlayerNumber = result.playerId;
-            onlineMultiplayerState.matchId = result.matchId;
+            matchId = result.matchId;
+            playerId = result.playerId;
         }
         
-        console.log(result.matchId + " " + result.playerId);
+        console.log("Match: " + matchId + " Player: " + playerId);
 
-        window.onbeforeunload = this.unregisterFromMatch();
+        matchMakingState.registered = true;
     },
 
     unregisterFromMatch: function()
     {
-        onlineMultiplayerState.controlledPlayerNumber = -1;
-        onlineMultiplayerState.matchId = -1;
-        window.onbeforeunload = null;
+        navigator.sendBeacon("unregister", 
+            JSON.stringify({
+                matchId: matchId,
+                playerId: playerId
+            })
+        );
     }
+
+    
     
 }
 

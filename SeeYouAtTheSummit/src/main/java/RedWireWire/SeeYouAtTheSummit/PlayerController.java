@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 public class PlayerController {
 	
-	private final int MAX_MATCH_COUNT = 10;
+	private final int MAX_MATCH_COUNT = 30;
 	
 	public Match[] matches = new Match[MAX_MATCH_COUNT];
 	
@@ -22,8 +22,8 @@ public class PlayerController {
 		}
 	}
 
-	
-	@PostMapping(value = "match")
+	//Registration
+	@PostMapping(value = "/match")
 	public MatchRegisterResult RegisterToMatch()
 	{
 		MatchRegisterResult match;
@@ -45,6 +45,37 @@ public class PlayerController {
 		return match;
 	}
 
+	@DeleteMapping(value = "/match")
+	public void UnregisterFromMatch(MatchRegisterResult matchRegistration)
+	{
+		if (matches[matchRegistration.matchId] != null)
+		{
+			matches[matchRegistration.matchId].SetPlayerById(null, matchRegistration.playerId);
+			System.out.println("Unregistering player " + matchRegistration.playerId + " from match " + matchRegistration.matchId);
+		}
+		else
+		{
+			System.out.println("Non existant match" + matchRegistration.matchId + " could not be unregistered from by player " + matchRegistration.playerId);
+		}
+	}
+	
+	@GetMapping(value = "/match/{matchId}")
+	public boolean GetMatchReadiness(@PathVariable int matchId)
+	{
+		Match match = matches[matchId];
+		if (match != null && match.GetIsReady())
+		{
+			return true;
+		}
+		else 
+		{
+			return false;
+		}
+	}
+
+	
+	
+	//Matchmaking utilities
 	private MatchRegisterResult FindOpenMatch()
 	{
 		System.out.println("Looking for an open match");

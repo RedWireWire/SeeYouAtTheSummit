@@ -12,14 +12,11 @@ onlineMultiplayerState.prototype = {
         Draw : 4
     },
 
-    //This identifier will be provided by the server
-    controlledPlayerNumber,
-
-    matchId,
-
     //Initialization
     preload: function() 
     {
+        this.controlledPlayerNumber = playerId;
+
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
@@ -51,17 +48,17 @@ onlineMultiplayerState.prototype = {
         var player1x = screenCenterX - playerSpawnDistanceFromCenterX;
         var player2x = screenCenterX + playerSpawnDistanceFromCenterX;
 
-        this.controlledPlayer = game.createPlayer(controlledPlayerNumber, 
-            (controlledPlayerNumber == 1) ? player1x : player2x,
+        this.controlledPlayer = game.createPlayer(this.controlledPlayerNumber, 
+            (this.controlledPlayerNumber == 1) ? player1x : player2x,
             this.ground.y - 100,
             this.playerPhysicsGroup,
             true, 
             game.ControlSchemes.NotShared
         );
-        this.controlledPlayer.playerNumber = controlledPlayerNumber;
+        this.controlledPlayer.playerNumber = this.controlledPlayerNumber;
 
         //The number that isn't the player's
-        var opponentNumber = (controlledPlayerNumber == 1) ? 2 : 1;
+        var opponentNumber = (this.controlledPlayerNumber == 1) ? 2 : 1;
         this.onlineSyncedPlayer = game.createPlayer(opponentNumber,
             (opponentNumber == 1) ? player1x : player2x,
             this.ground.y - 100,
@@ -71,7 +68,7 @@ onlineMultiplayerState.prototype = {
         this.onlineSyncedPlayer.playerNumber = opponentNumber;
 
         //Player piece
-        game.nextPiece(controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
+        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
             function(state, piece) { state.controlledPiece = piece});
     },
 
