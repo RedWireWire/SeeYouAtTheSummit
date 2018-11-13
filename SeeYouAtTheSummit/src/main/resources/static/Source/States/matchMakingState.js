@@ -28,6 +28,10 @@ matchMakingState.prototype = {
                 onlineMultiplayerState.controlledPlayerNumber = 2;
                 game.state.start("onlineMultiplayerState");
             }
+            else if (game.input.keyboard.isDown(Phaser.Keyboard.THREE))
+            {
+                game.state.start("localMultiplayerState");
+            }
         }
         
     },
@@ -35,7 +39,7 @@ matchMakingState.prototype = {
     showMatchMakingShortcuts: function()
     {
         var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
-        var message = "Press 1 for player 1, \n 2 for player 2.";
+        var message = "Press 1 for player 1.\n 2 for player 2.\n 3 for local.";
 
         var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
         console.log(message);

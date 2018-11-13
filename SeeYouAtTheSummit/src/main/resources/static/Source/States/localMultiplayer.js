@@ -47,8 +47,10 @@ localMultiplayerState.prototype = {
         this.player2 = game.createPlayer(2, screenCenterX + playerSpawnDistanceFromCenterX, this.ground.y - 100, this.playerPhysicsGroup, true, game.ControlSchemes.Shared2);
 
         //Player pieces
-        game.nextPiece(1, this, player1.controlScheme);
-        game.nextPiece(2, this, player2.controlScheme);
+        game.nextPiece(1, this, this.player1.controlScheme, 
+            function(state, piece) { state.player1Piece = piece;});
+        game.nextPiece(2, this, this.player2.controlScheme,
+            function(state, piece) { state.player2Piece = piece;});
     },
 
     update: function() {
@@ -66,6 +68,9 @@ localMultiplayerState.prototype = {
             //Player input
             game.reactToPlayerInput(this.player1, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
             game.reactToPlayerInput(this.player2, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
+
+            game.updatePlayerAnimation(this.player1);
+            game.updatePlayerAnimation(this.player2);
 
             //Tetris input
             if (this.currentGameState == GameStates.GameInProgress)
