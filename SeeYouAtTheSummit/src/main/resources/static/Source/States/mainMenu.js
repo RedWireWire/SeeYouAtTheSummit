@@ -67,7 +67,7 @@ mainMenuState.prototype = {
 
         this.group.sort("renderOrder", Phaser.Group.SORT_ASCENDING);
 
-        this.testRest();
+        //this.testRest();
     },
 
     createBackground: function()

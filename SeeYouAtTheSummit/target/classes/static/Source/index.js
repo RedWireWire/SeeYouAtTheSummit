@@ -7,6 +7,8 @@ var game = new Phaser.Game(gameWidth, gameHeight, Phaser.AUTO, '')
 //Estados del juego
 game.state.add('bootState', bootState);
 game.state.add("mainMenuState", mainMenuState);
-game.state.add("platformGameplayState", platformGameplayState);
+game.state.add("matchMakingState", matchMakingState);
+game.state.add("localMultiplayerState", localMultiplayerState);
+game.state.add("onlineMultiplayerState", onlineMultiplayerState);
   
 game.state.start('bootState');

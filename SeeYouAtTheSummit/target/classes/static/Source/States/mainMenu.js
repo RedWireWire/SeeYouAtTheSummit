@@ -67,7 +67,7 @@ mainMenuState.prototype = {
 
         this.group.sort("renderOrder", Phaser.Group.SORT_ASCENDING);
 
-        this.testRest();
+        //this.testRest();
     },
 
     createBackground: function()
@@ -265,7 +265,7 @@ mainMenuState.prototype = {
     {
         if (game.input.keyboard.isDown(gameStartKey))
         {
-            game.state.start("platformGameplayState");
+            game.state.start("matchMakingState");
         }
     },
 

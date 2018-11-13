@@ -35,17 +35,53 @@ game.player1Color = 0xff608b;
 game.player2Color = 0xff9068;
 
 //Player input settings
-game.player1JumpKey = Phaser.Keyboard.SPACEBAR;
-game.player1LeftMoveKey = Phaser.Keyboard.A;
-game.player1RightMoveKey = Phaser.Keyboard.D;
+game.ControlSchemes = 
+{
+    NotShared: {
+        jump: Phaser.Keyboard.SPACEBAR,
+        right: Phaser.Keyboard.D,
+        left: Phaser.Keyboard.A,
+        pieceFreeze: Phaser.Keyboard.ENTER,
+        pieceRotate: Phaser.Keyboard.UP,
+        pieceLeft: Phaser.Keyboard.LEFT,
+        pieceRight: Phaser.Keyboard.RIGHT,
+        pieceDown: Phaser.Keyboard.DOWN
+    },
+    Shared1: {
+        jump: Phaser.Keyboard.SPACEBAR,
+        right: Phaser.Keyboard.D,
+        left: Phaser.Keyboard.A,
+        pieceFreeze: Phaser.Keyboard.R,
+        pieceRotate: Phaser.Keyboard.T,
+        pieceLeft: Phaser.Keyboard.F,
+        pieceRight: Phaser.Keyboard.H,
+        pieceDown: Phaser.Keyboard.G
+    },
+    Shared2: 
+    {
+        jump: Phaser.Keyboard.UP,
+        right: Phaser.Keyboard.RIGHT,
+        left: Phaser.Keyboard.LEFT,
+        pieceFreeze: Phaser.Keyboard.U,
+        pieceRotate: Phaser.Keyboard.I,
+        pieceLeft: Phaser.Keyboard.J,
+        pieceRight: Phaser.Keyboard.L,
+        pieceDown: Phaser.Keyboard.K
+    }
+}
 
-game.player2JumpKey = Phaser.Keyboard.UP;
-game.player2LeftMoveKey = Phaser.Keyboard.LEFT;
-game.player2RightMoveKey = Phaser.Keyboard.RIGHT;
+//Animation codes
+game.AnimationCodes = {
+    NoChange: 0,
+    Idle: 1,
+    Run: 2,
+    Jump: 3,
+    Wallgrab: 4
+}
 
 
 //Creation
-game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGroup)
+game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGroup, playerControlled = true, controlScheme)
 {
     //Sprite
     var player = game.add.sprite(xPosition, yPosition, "playerSpriteSheet");
@@ -68,6 +104,8 @@ game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGr
     player.animations.add("jump", [6], 1, true);
     player.animations.add("grabWall", [7], 1, true);
 
+    player.animationCode = game.AnimationCodes.Idle;
+
     //Scaling
     player.anchor.setTo(game.playerSpriteCenterX, game.playerSpriteCenterY);
     player.scale.x = game.playerSpriteScale;
@@ -79,9 +117,12 @@ game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGr
     player.body.drag = 0;                 //We'll use our own drag
     player.body.enable = true;
 
-    player.body.maxVelocity.x = game.playerMaxHorizontalSpeed;
-    player.body.drag.x = game.playerHorizontalDrag;
-
+    if (playerControlled)
+    {
+        player.body.maxVelocity.x = game.playerMaxHorizontalSpeed;
+        player.body.drag.x = game.playerHorizontalDrag;
+    }
+    
     playerPhysicsGroup.add(player);
 
     //Hitbox
@@ -93,22 +134,14 @@ game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGr
     );
 
     //Input variables
-    switch (playerNumber)
+    if (playerControlled)
     {
-        case 1:
-            player.jumpKey = game.player1JumpKey;
-            player.leftMoveKey = game.player1LeftMoveKey;
-            player.rightMoveKey = game.player1RightMoveKey;
-            break;
-        case 2:
-            player.jumpKey = game.player2JumpKey;
-            player.leftMoveKey = game.player2LeftMoveKey;
-            player.rightMoveKey = game.player2RightMoveKey;
-            break;
+        player.controlScheme = controlScheme;
     }
 
     player.liftedJumpKey = true;
 
+    player.playerControlled = playerControlled;
     return player;
 }
 
@@ -126,9 +159,9 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
 
     if (gameState == GameStates.GameInProgress)
     {
-        rightInput = game.input.keyboard.isDown(player.rightMoveKey);
-        leftInput = game.input.keyboard.isDown(player.leftMoveKey);
-        jumpKey = game.input.keyboard.isDown(player.jumpKey);
+        rightInput = game.input.keyboard.isDown(player.controlScheme.right);
+        leftInput = game.input.keyboard.isDown(player.controlScheme.left);
+        jumpKey = game.input.keyboard.isDown(player.controlScheme.jump);
     }
     
     //Check if we will allow jump input 
@@ -229,23 +262,44 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
     {
         if (pushDirection == 0)
         {
-            player.animations.play("idle");
-            player.scale.x = Math.abs(player.scale.x);
+            player.animationCode = game.AnimationCodes.Idle;
         }
         else
         {
-            player.scale.x = Math.abs(player.scale.x) * pushDirection;
-            player.animations.play("walk");
+            player.animationCode = pushDirection * game.AnimationCodes.Run;
         }
     }
     else
     {
         if (isGrabbingWall != 0)
         {
-            player.scale.x = Math.abs(player.scale.x) * isGrabbingWall;
-            player.animations.play("grabWall");
+            player.animationCode = Math.sign(isGrabbingWall) * game.AnimationCodes.Wallgrab;
         } 
-        else player.animations.play("jump");
+        else 
+        player.animationCode = game.AnimationCodes.Jump;
+    }
+}
+
+game.updatePlayerAnimation = function(player)
+{
+    var sign = Math.sign(player.animationCode);
+    switch (Math.abs(player.animationCode))
+    {
+        case game.AnimationCodes.Idle: 
+            player.animations.play("idle");
+            player.scale.x = Math.abs(player.scale.x);
+            break;
+        case game.AnimationCodes.Run:
+            player.scale.x = Math.abs(player.scale.x) * sign;
+            player.animations.play("walk");
+            break;
+        case game.AnimationCodes.Jump:
+            player.animations.play("jump");
+            break;
+        case game.AnimationCodes.Wallgrab:
+            player.scale.x = Math.abs(player.scale.x) * sign;
+            player.animations.play("grabWall");
+            break;
     }
 }
 

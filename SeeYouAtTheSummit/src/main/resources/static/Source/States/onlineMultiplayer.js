@@ -15,6 +15,8 @@ onlineMultiplayerState.prototype = {
     //This identifier will be provided by the server
     controlledPlayerNumber,
 
+    matchId,
+
     //Initialization
     preload: function() 
     {
