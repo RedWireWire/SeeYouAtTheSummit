@@ -97,6 +97,7 @@ game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGr
         default:
             console.log("Unsupported player number " + playerNumber);
     }
+    player.playerId = playerNumber;
     
     //Animation
     player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
