@@ -30,6 +30,12 @@ public class Match {
 		else return player2;
 	}
 	
+	public Player GetOtherPlayerById(int id)
+	{
+		if (id == 1) return player2;
+		else return player1;
+	}
+	
  	public void SetPlayerById(Player player, int id)
 	{
 		if (id==1) player1 = player;
@@ -44,6 +50,8 @@ public class Match {
 			isReady = false;
 		}
 	}
+ 	
+ 	
 	
  	
  	//Match start

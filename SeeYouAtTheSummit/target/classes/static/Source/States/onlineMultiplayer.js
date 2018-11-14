@@ -106,15 +106,15 @@ onlineMultiplayerState.prototype = {
             game.reactToPlayerInput(this.controlledPlayer, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
             game.updatePlayerAnimation(this.controlledPlayer);
 
-            game.updatePlayerAnimation(this.onlineSyncedPlayer);
-
-            
             //Tetris input
             if (this.currentGameState == this.GameStates.GameInProgress)
             {
                 if (this.controlledPiece) game.directPiece(this.controlledPiece, this);
             }
         
+            //Server syncing. Handles opponent syncing too.
+            this.serverUpdate(this.controlledPlayer);
+
             //Camera control
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
 
@@ -172,6 +172,44 @@ onlineMultiplayerState.prototype = {
     },
 
 
+
+    //Server operations
+    serverUpdate: function(player)
+    {
+        var object = {
+            playerId: player.playerId,
+            x: player.x,
+            y: player.y,
+            animationCode: player.animationCode
+        }
+
+        $.ajax(
+            "/playerupdate/" + matchId,
+            {
+                method: "PUT",
+                data: JSON.stringify(object),
+                processData: false,
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                success: this.updateOpponent
+            }
+        )
+    },
+
+    updateOpponent: function(opponentUpdate)
+    {
+        var state = game.state.getCurrentState();
+        var opponent = state.onlineSyncedPlayer;
+        
+        opponent.x = opponentUpdate.x;
+        opponent.y = opponentUpdate.y;
+        opponent.animationCode = opponentUpdate.animationCode;
+        game.updatePlayerAnimation(opponent);
+    },
+
     //////////////
     //GAME STATE//
     //////////////
@@ -225,7 +263,7 @@ onlineMultiplayerState.prototype = {
                 message = "Only you lose.";
                 break;
             case this.GameStates.PlayerWon:
-                message = "Everbody but you loses."
+                message = "Everybody but you loses."
                 break;
             case this.GameStates.Draw:
                 message = "Everybody loses."
@@ -233,7 +271,7 @@ onlineMultiplayerState.prototype = {
         }
 
         //Show it
-        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
+        var announcementText = game.add.text(gameWidth / 2 - 100, gameHeight / 2, message, style);
         console.log(message);
         announcementText.fixedToCamera = true;
     },

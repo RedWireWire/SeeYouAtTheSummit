@@ -85,6 +85,24 @@ public class PlayerController {
 		//matches[]
 	}
 	
+	//Gameplay
+	@PutMapping(value = "playerupdate/{matchId}")
+	public PlayerUpdate Update(@PathVariable int matchId, @RequestBody PlayerUpdate receivedUpdate)
+	{
+		Match match = matches[matchId];
+		int playerId = receivedUpdate.playerId;
+		
+		//Process the update
+		match.GetPlayerById(playerId).lastUpdate = receivedUpdate;
+		
+		//Return the opponent's update
+		return match.GetOtherPlayerById(playerId).lastUpdate;
+	}
+	
+	
+	
+	
+	
 	//Matchmaking utilities
 	private MatchRegisterResult FindOpenMatch()
 	{
