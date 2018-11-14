@@ -94,13 +94,13 @@ onlineMultiplayerState.prototype = {
                         "Content-Type": "application/json"
                     },
 
-                    success: function(data) { console.log(data);}
+                    success: function(goTime) { if (goTime) game.state.getCurrentState().startMatch();}
                 }
             )
 
         }
         //Gameplay state
-        else 
+        else if (this.currentGameState == this.GameStates.GameInProgress)
         {
             //Player movement
             game.reactToPlayerInput(this.controlledPlayer, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
@@ -130,6 +130,11 @@ onlineMultiplayerState.prototype = {
     },
 
 
+    //State management
+    startMatch: function()
+    {
+        this.currentGameState = this.GameStates.GameInProgress;
+    },
 
     //TMP
     updateScore: function()
