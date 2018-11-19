@@ -226,6 +226,8 @@ onlineMultiplayerState.prototype = {
         });
         var path = "/tetrisupdate/" + matchId;
 
+        console.log("Sending CREATE");
+
         $.ajax(
             path,
             {
@@ -246,7 +248,7 @@ onlineMultiplayerState.prototype = {
 
     postTetrisMove: function(piece, direction)
     {
-        console.log("SENDING" + direction);
+        console.log("Sending " + direction);
 
         var path = "tetrisupdate/" + matchId;
         var sentData = JSON.stringify(
@@ -280,12 +282,49 @@ onlineMultiplayerState.prototype = {
 
     postTetrisRotate: function()
     {
+        var update = {
+            playerId: this.controlledPlayer.playerNumber,
+            timeStamp: game.time.now,
+            actionCode: "ROTATE"
+        }
 
+        console.log("Sending ROTATE");
+
+        $.ajax(
+            "tetrisupdate/" + matchId,
+            {
+                method: "POST",
+                data: JSON.stringify(update),
+                processData: false,
+                headers:
+                {
+                    "Content-Type": "application/json"
+                }
+            }
+        )
     },
 
     postTetrisFreeze: function()
     {
+        var update = {
+            playerId: this.controlledPlayer.playerNumber,
+            timeStamp: game.time.now,
+            actionCode: "FREEZE"
+        }
 
+        console.log("Sending FREEZE");
+        $.ajax(
+            "tetrisupdate/" + matchId,
+            {
+                method: "POST",
+                data: JSON.stringify(update),
+                processData: false,
+                headers:
+                {
+                    "Content-Type": "application/json"
+                }
+            }
+        )
     },
 
     pollOpponentTetrisAction: function()
@@ -323,7 +362,7 @@ onlineMultiplayerState.prototype = {
                 break;
 
             case "ROTATE":
-                    
+                game.rotatePiece(game.state.getCurrentState().onlineSyncedPiece);
                 break;
 
             case "RIGHT":
@@ -340,7 +379,8 @@ onlineMultiplayerState.prototype = {
                 break;
 
             case "FREEZE":
-
+                var state = game.state.getCurrentState();
+                game.freezePiece(state.onlineSyncedPiece, state);
                 break;
         }
     },

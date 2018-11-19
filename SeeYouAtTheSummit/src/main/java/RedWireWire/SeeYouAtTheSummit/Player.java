@@ -14,9 +14,7 @@ public class Player {
 	private ArrayList<TetrisUpdate> tetrisUpdates;
 	
 	public void EnterTetrisUpdate(TetrisUpdate update)
-	{
-		System.out.println("Recieved " + update.actionCode);
-		
+	{	
 		//Delete any read updates
 		for (int i = 0; i < tetrisUpdates.size(); i++)
 		{
@@ -32,27 +30,10 @@ public class Player {
 			System.out.println("Tetrisupdates does not exist");
 			return;
 		}
-		if (tetrisUpdates.size() == 0)
-		{
-			tetrisUpdates.add(update);
-		}
 		else
 		{
-			//Find the correct in which to enter it, sorting by timestamp
-			boolean entered = false;
-			for (int i = 0; i < tetrisUpdates.size(); i++)
-			{
-				if (update.timeStamp < tetrisUpdates.get(i).timeStamp)
-				{
-					tetrisUpdates.add(i, update);
-					entered = true;
-				}
-			}
-			//If we haven't entered it by this point, it's the last one
-			if (!entered)
-			{
-				tetrisUpdates.add(update);
-			}
+			tetrisUpdates.add(update);
+			SortTetrisUpdates();
 		}
 	}
 	
@@ -72,12 +53,31 @@ public class Player {
 				if (!update.hasBeenRead)
 				{
 					update.hasBeenRead = true;
+					OutputTetrisUpdates();
 					return update;
 				}
 			}
 		}
 		
 		return TetrisUpdate.NullUpdate();
+	}
+	
+	private void SortTetrisUpdates()
+	{
+		tetrisUpdates.sort((o1, o2) -> Integer.compare(o1.timeStamp,  o2.timeStamp));
+	}
+	
+	private void OutputTetrisUpdates()
+	{
+		String s = "";
+		for (int i = 0; i < tetrisUpdates.size(); i++)
+		{
+			s += tetrisUpdates.get(i).actionCode;
+			s += "(" + Boolean.toString(tetrisUpdates.get(i).hasBeenRead) + ")";
+			
+		}
+		
+		System.out.println("Contained updates: " + s);
 	}
 	
 	//Constructor
