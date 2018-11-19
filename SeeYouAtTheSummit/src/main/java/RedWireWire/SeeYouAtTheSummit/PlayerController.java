@@ -79,14 +79,14 @@ public class PlayerController {
 	public boolean SetAcceptance(@PathVariable int matchId, @RequestBody PlayerAcceptance player)
 	{
 		//Set the acceptance for the player, and return true if both are now in acceptance
+		Match match = matches[matchId];
+		match.GetPlayerById(player.playerId).inAcceptance = player.isInAcceptance;
 		
-		return true;
-		//System.out.println("test: " + playerId);
-		//matches[]
+		return match.BothAreInAcceptance();
 	}
 	
 	//Gameplay
-	@PutMapping(value = "playerupdate/{matchId}")
+	@PutMapping(value = "/playerupdate/{matchId}")
 	public PlayerUpdate Update(@PathVariable int matchId, @RequestBody PlayerUpdate receivedUpdate)
 	{
 		Match match = matches[matchId];
@@ -99,6 +99,20 @@ public class PlayerController {
 		return match.GetOtherPlayerById(playerId).lastUpdate;
 	}
 	
+	@PostMapping(value = "/tetrisupdate/{matchId}")
+	public void AddTetrisUpdate(@PathVariable int matchId, @RequestBody TetrisUpdate update)
+	{
+		int playerId = update.playerId;
+		Player player = matches[matchId].GetPlayerById(playerId);
+		player.EnterTetrisUpdate(update);
+	}
+	
+	@PutMapping(value = "/tetrisupdate/{matchId}")
+	public TetrisUpdate GetTetrisUpdate(@PathVariable int matchId, @RequestBody IDWrapper requestingPlayerId)
+	{
+		Player opponent = matches[matchId].GetOtherPlayerById((requestingPlayerId.id));
+		return opponent.GetTetrisUpdate();
+	}
 	
 	
 	

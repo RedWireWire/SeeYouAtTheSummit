@@ -9,7 +9,7 @@ game.playerSpawnDistanceFromCenterXFraction = 4;
 game.groundHeightInCubes = 5;
 
 //Camera
-game.cameraAutoScrollSpeed = 0.3;
+game.cameraAutoScrollSpeed = 0.003;//0.3;
 game.cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
 
 //Background

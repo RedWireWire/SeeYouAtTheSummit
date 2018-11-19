@@ -15,6 +15,7 @@ onlineMultiplayerState.prototype = {
     //Initialization
     preload: function() 
     {
+        this.isInAcceptance = false;
         this.controlledPlayerNumber = playerId;
 
         //Load sprites
@@ -66,10 +67,10 @@ onlineMultiplayerState.prototype = {
             false
         );
         this.onlineSyncedPlayer.playerNumber = opponentNumber;
-
+        
         //Player piece
         game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
-            function(state, piece) { state.controlledPiece = piece});
+            function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
     },
 
     update: function() {
@@ -81,13 +82,14 @@ onlineMultiplayerState.prototype = {
         //Pregame state
         if (this.currentGameState == this.GameStates.PreGame)
         {
+            this.isInAcceptance = true;
             $.ajax(
                 "/acceptance/" + matchId,
                 {
                     method: "PUT",
                     data: JSON.stringify({
                         playerId: playerId,
-                        isInAcceptance: true
+                        isInAcceptance: this.isInAcceptance
                     }),
                     processData: false,
                     headers: {
@@ -107,13 +109,11 @@ onlineMultiplayerState.prototype = {
             game.updatePlayerAnimation(this.controlledPlayer);
 
             //Tetris input
-            if (this.currentGameState == this.GameStates.GameInProgress)
-            {
-                if (this.controlledPiece) game.directPiece(this.controlledPiece, this);
-            }
+            if (this.controlledPiece) game.directPiece(this.controlledPiece, this);            
         
             //Server syncing. Handles opponent syncing too.
             this.serverUpdate(this.controlledPlayer);
+            this.pollOpponentTetrisAction();
 
             //Camera control
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
@@ -135,6 +135,9 @@ onlineMultiplayerState.prototype = {
     {
         this.currentGameState = this.GameStates.GameInProgress;
     },
+
+
+
 
     //TMP
     updateScore: function()
@@ -208,6 +211,138 @@ onlineMultiplayerState.prototype = {
         opponent.y = opponentUpdate.y;
         opponent.animationCode = opponentUpdate.animationCode;
         game.updatePlayerAnimation(opponent);
+    },
+
+    postTetrisCreate: function(piece)
+    {
+        var tetrisUpdate = JSON.stringify({
+            playerId: piece.playerNumber,
+            timeStamp: game.time.now,
+            actionCode: "CREATE",
+
+            xPosition: piece.spawnX,
+            yPosition: piece.spawnY,
+            shape: piece.shape
+        });
+        var path = "/tetrisupdate/" + matchId;
+
+        $.ajax(
+            path,
+            {
+                method: "POST",
+                data: tetrisUpdate,
+                processData: false,
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                //Retry if the server didn't recive the update.
+                error: function() {
+                    $.ajax(this);
+                }
+            }
+        )
+    },
+
+    postTetrisMove: function(piece, direction)
+    {
+        console.log("SENDING" + direction);
+
+        var path = "tetrisupdate/" + matchId;
+        var sentData = JSON.stringify(
+            {
+                playerId: piece.playerNumber,
+                timeStamp: game.time.now,
+                actionCode: direction,
+                xPosition: 0,
+                yPosition: 0,
+                shape: 0
+            }
+        )
+
+        $.ajax(
+            path, 
+            {
+                method: "POST",
+                data: sentData,
+                dataType: "json",
+                processData: false,
+                headers:
+                {
+                    "Content-Type": "application/json"
+                },
+                
+                //success: function(data) { console.log("Sent " + data.actionCode);},
+                //error: function(){ $.ajax(this); } 
+            }
+        )
+    },
+
+    postTetrisRotate: function()
+    {
+
+    },
+
+    postTetrisFreeze: function()
+    {
+
+    },
+
+    pollOpponentTetrisAction: function()
+    {
+        var sentData = JSON.stringify({ id: playerId});
+        $.ajax(
+            "/tetrisupdate/" + matchId,
+            {
+                method: "PUT",
+                data: sentData,
+                processData: false,
+                headers:
+                {
+                    "Content-Type": "application/json"
+                },
+
+                success: this.processOpponentTetrisUpdate
+            }
+        )
+    },
+
+    processOpponentTetrisUpdate: function(update)
+    {
+        if (update.actionCode != "NULL") console.log("Processing " + update.actionCode);
+        
+        switch (update.actionCode)
+        {
+            case "NULL":
+                return;
+
+            case "CREATE":
+                game.createPiece(update.shape, update.xPosition, update.yPosition, update.playerId, 
+                    game.state.getCurrentState().piecePhysicsGroup, null, 
+                    function(state, piece) {state.onlineSyncedPiece = piece;}, false);
+                break;
+
+            case "ROTATE":
+                    
+                break;
+
+            case "RIGHT":
+                game.movePiece(game.state.getCurrentState().onlineSyncedPiece, 1);
+                break;
+
+            case "LEFT":
+                game.movePiece(game.state.getCurrentState().onlineSyncedPiece, -1);
+                break;
+            
+            case "DOWN":
+                var state = game.state.getCurrentState();
+                game.lowerPiece(state.onlineSyncedPiece, state);
+                break;
+
+            case "FREEZE":
+
+                break;
+        }
     },
 
     //////////////

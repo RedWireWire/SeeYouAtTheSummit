@@ -272,7 +272,7 @@ mainMenuState.prototype = {
     testRest: function()
     {
         var object = JSON.stringify({playerID: 11});
-        $.ajax("/test", 
+        $.ajax("/acceptance/0", 
         {
             method: "POST",
             data: object,

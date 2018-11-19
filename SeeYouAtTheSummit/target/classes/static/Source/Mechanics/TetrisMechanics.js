@@ -12,7 +12,7 @@ game.pieceSpawnScreenBottomMarginInCubes = 15;
 game.pieceSpawnXFromCenterInCubes = 5;
 
 //Timings
-game.autoDescendTime = 45;
+game.autoDescendTime = 10000//45;
 game.nextPieceWaitTime = 2000;  //In miliseconds
 
 //Brick system
@@ -21,7 +21,7 @@ game.deleteCondition = 5;
 
 
 //Creation
-game.nextPiece = function(playerNumber, state, controlScheme, savingFunction)
+game.nextPiece = function(playerNumber, state, controlScheme, savingFunction, mustBeSentToServer)
 {
     //Create the piece
     var screenCenterX = gameWidth / 2;
@@ -35,18 +35,20 @@ game.nextPiece = function(playerNumber, state, controlScheme, savingFunction)
     y -= game.pieceSpawnScreenBottomMarginInCubes * game.scaledCubeSize;
 
 
-    var piece = game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme);
-    piece.savingFunction = savingFunction;
-    //Assign the piece
-    savingFunction(state, piece);
+    game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme, savingFunction, mustBeSentToServer);
 }
 
-game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup, controlScheme)
+//Null controlScheme means it's online controlled
+game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup, controlScheme, savingFunction, mustBeSentToServer)
 {
     var pieza = new Object();
     pieza.playerNumber = playerNumber;
+    pieza.spawnX = Xpieza;
+    pieza.spawnY = Ypieza;
+    pieza.mustBeSentToServer = mustBeSentToServer;
     
     //Creation of the desired shape
+    pieza.shape = estilo;
     switch(estilo){
         case 1:
         //Creación de la pieza L
@@ -150,6 +152,11 @@ game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup
 
     //Input
     pieza.controlScheme = controlScheme;
+
+    //Saving
+    pieza.savingFunction = savingFunction;
+    pieza.savingFunction(game.state.getCurrentState(), pieza);
+
     return pieza;
 }
 
@@ -217,6 +224,13 @@ game.attemptToMovePiece = function(piece, direction)
 {
     if(game.isAllowedToMove(piece, direction)){
         game.movePiece(piece, direction);
+        if (piece.mustBeSentToServer)
+        {
+            var actionCode = "NULL";
+            if (direction == 1) actionCode = "RIGHT";
+            else if (direction == -1) actionCode = "LEFT";
+            game.state.getCurrentState().postTetrisMove(piece, actionCode);
+        }
     }
 }
 
@@ -271,6 +285,7 @@ game.lowerPiece = function(piece, state)
         {
             piece.bricks[i].body.y += game.scaledCubeSize;
         }
+        if (piece.mustBeSentToServer) state.postTetrisMove(piece, "DOWN");
     }
 }
 
@@ -507,7 +522,12 @@ game.freezePiece = function(piece, state)
     }
 
     game.checkForBrickDestruction(state.brickPositions);
-    setTimeout(game.nextPiece, game.nextPieceWaitTime, piece.playerNumber, state, piece.controlScheme, piece.savingFunction);
+
+    //Create another if trhis isn't an online opponent's piece
+    if (piece.controlScheme != null)
+    {
+        setTimeout(game.nextPiece, game.nextPieceWaitTime, piece.playerNumber, state, piece.controlScheme, piece.savingFunction);
+    }
 }
 
 game.pieceIsAllowedToFreeze = function(piece, state)
