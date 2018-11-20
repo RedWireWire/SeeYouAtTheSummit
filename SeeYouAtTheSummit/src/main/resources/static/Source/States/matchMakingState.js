@@ -48,7 +48,7 @@ matchMakingState.prototype = {
             }
         }
         
-        if (matchMakingState.registered)
+        if (this.registered)
         {
             this.pollMatchFullness(matchId)
         }
@@ -121,7 +121,7 @@ matchMakingState.prototype = {
         
         console.log("Match: " + matchId + " Player: " + playerId);
 
-        matchMakingState.registered = true;
+        game.state.getCurrentState().registered = true;
     },
 
     unregisterFromMatch: function()

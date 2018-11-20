@@ -9,7 +9,9 @@ onlineMultiplayerState.prototype = {
         GameInProgress : 1,
         PlayerWon : 2,
         PlayerLost : 3,
-        Draw : 4
+        Draw : 4,
+        WaitingForRematch: 5,
+        Abandoned: 6
     },
 
     //Initialization
@@ -61,6 +63,7 @@ onlineMultiplayerState.prototype = {
             game.ControlSchemes.NotShared
         );
         this.controlledPlayer.playerNumber = this.controlledPlayerNumber;
+        this.controlledPlayer.isDead = false;
 
         //The number that isn't the player's
         var opponentNumber = (this.controlledPlayerNumber == 1) ? 2 : 1;
@@ -71,6 +74,7 @@ onlineMultiplayerState.prototype = {
             false
         );
         this.onlineSyncedPlayer.playerNumber = opponentNumber;
+        this.onlineSyncedPlayer.isDead = false;
         
         //Player piece
         game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
@@ -123,13 +127,27 @@ onlineMultiplayerState.prototype = {
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
 
             //Gamestate control
-            if (this.currentGameState == this.GameStates.GameInProgress) this.checkForGameEnd();
+            this.checkForPlayerDeath();
+            this.checkForGameEnd(this.controlledPlayer, this.onlineSyncedPlayer);
         }
-
         //Game end
-        if (this.currentGameState == this.GameStates.PlayerLost || this.currentGameState == this.GameStates.Draw || this.currentGameState == this.GameStates.PlayerWon)
+        else if (this.currentGameState == this.GameStates.PlayerLost || this.currentGameState == this.GameStates.Draw || this.currentGameState == this.GameStates.PlayerWon)
         {
-            this.checkForBackToMenu();
+            this.serverUpdate(this.controlledPlayer);
+            this.checkForBackToMenuOrRematch();
+            this.pollForRematch();
+        }
+        //Waiting for rematch
+        else if (this.currentGameState == this.GameStates.WaitingForRematch)
+        {
+            this.serverUpdate(this.controlledPlayer);
+            this.checkForBackToMenuOnly();
+            this.pollForRematch();
+        }
+        //Left alone
+        else if (this.currentGameState == this.GameStates.Abandoned)
+        {
+            this.checkForBackToMenuOnly();
         }
     },
 
@@ -187,7 +205,8 @@ onlineMultiplayerState.prototype = {
             playerId: player.playerId,
             x: player.x,
             y: player.y,
-            animationCode: player.animationCode
+            animationCode: player.animationCode,
+            isDead: player.isDead
         }
 
         $.ajax(
@@ -210,11 +229,16 @@ onlineMultiplayerState.prototype = {
     {
         var state = game.state.getCurrentState();
         var opponent = state.onlineSyncedPlayer;
-        
-        opponent.x = opponentUpdate.x;
-        opponent.y = opponentUpdate.y;
-        opponent.animationCode = opponentUpdate.animationCode;
-        game.updatePlayerAnimation(opponent);
+     
+        if (opponent)
+        {
+            opponent.x = opponentUpdate.x;
+            opponent.y = opponentUpdate.y;
+            opponent.animationCode = opponentUpdate.animationCode;
+            game.updatePlayerAnimation(opponent);
+
+            opponent.isDead = opponentUpdate.isDead;
+        }
     },
 
     postTetrisCreate: function(piece)
@@ -271,7 +295,7 @@ onlineMultiplayerState.prototype = {
             {
                 method: "POST",
                 data: sentData,
-                dataType: "json",
+                //dataType: "json",
                 processData: false,
                 headers:
                 {
@@ -281,6 +305,7 @@ onlineMultiplayerState.prototype = {
                 //success: function(data) { console.log("Sent " + data.actionCode);},
                 error: function() {
                     $.ajax(this);
+                    console.log("Retrying");
                 }
             }
         )
@@ -400,75 +425,148 @@ onlineMultiplayerState.prototype = {
     //////////////
     //GAME STATE//
     //////////////
-    checkForGameEnd: function()
+    checkForPlayerDeath: function()
     {
-        //are the players on screen?
+        //Is the local player onscreen?
         var localPlayerNotOnScreen = !this.controlledPlayer.inCamera;
-        var onlineSyncedPlayerNotOnScreen= !this.onlineSyncedPlayer.inCamera;
+        
 
         //If a player is off-screen, are they below the top of the screen?
         var localPlayerLost = false;
         if (localPlayerNotOnScreen && game.getPlayerScreenTopOvershoot(this.controlledPlayer) == 0)
         {
-            localPlayerLost = true;
+            this.controlledPlayer.isDead = true;
         }
+    },
 
-        var onlineSyncedPlayerLost = false;
-        if (onlineSyncedPlayerNotOnScreen && game.getPlayerScreenTopOvershoot(this.onlineSyncedPlayer) == 0)
+    checkForGameEnd: function(localPlayer, onlinePlayer)
+    {
+        if (localPlayer.isDead)
         {
-            onlineSyncedPlayerLost = true;
+            if (onlinePlayer.isDead)
+            {
+                this.currentGameState = this.GameStates.Draw;
+                game.announce("Everybody loses.");
+            }
+            else
+            {
+                this.currentGameState = this.GameStates.PlayerLost;
+                game.announce("Only you lose.");
+            }
         }
-        
-        //Check if the game is over, and what the result is
-        if (localPlayerLost && !onlineSyncedPlayerLost) 
-        {
-            this.currentGameState = this.GameStates.PlayerLost;
-            this.announceGameEnd();
-        }
-        else if (onlineSyncedPlayerLost && !localPlayerLost)
+        else if (onlinePlayer.isDead)
         {
             this.currentGameState = this.GameStates.PlayerWon;
-            this.announceGameEnd();
-        }
-        else if (localPlayerLost && onlineSyncedPlayerLost)
-        {
-            this.currentGameState = this.GameStates.Draw;
-            this.announceGameEnd();
+            game.announce("Everybody but you loses.");
         }
     },
 
-    announceGameEnd: function()
+    //After the game
+    checkForBackToMenuOrRematch: function()
     {
-        //Message setup
-        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
-        var message = "";
-
-        //Write the message string
-        switch (this.currentGameState)
+        if (game.input.keyboard.isDown(Phaser.Keyboard.ESC))
         {
-            case this.GameStates.PlayerLost:
-                message = "Only you lose.";
-                break;
-            case this.GameStates.PlayerWon:
-                message = "Everybody but you loses."
-                break;
-            case this.GameStates.Draw:
-                message = "Everybody loses."
-                break;
+            this.goBackToMainMenu();
         }
+        else if (game.input.keyboard.isDown(Phaser.Keyboard.ENTER))
+        {
+            $.ajax(
+                "/rematch",
+                {
+                    method:"POST",
+                    data: JSON.stringify(
+                        {
+                            matchId: matchId,
+                            playerId: playerId
+                        }
+                    ),
+                    processData: false,
+                    headers:{
+                        "Content-Type": "application/json"
+                    },
 
-        //Show it
-        var announcementText = game.add.text(gameWidth / 2 - 100, gameHeight / 2, message, style);
-        console.log(message);
-        announcementText.fixedToCamera = true;
+                    success: this.startWaitingForRematch
+                }
+            )
+        }
     },
 
-    
-    checkForBackToMenu: function()
+    checkForBackToMenuOnly: function()
     {
-        if (game.input.keyboard.isDown(Phaser.Keyboard.ESC) || game.input.keyboard.isDown(Phaser.Keyboard.ENTER))
+        if (game.input.keyboard.isDown(Phaser.Keyboard.ESC))
         {
-            game.state.start("mainMenuState");
+            this.goBackToMainMenu();
         }
+    },
+
+    startWaitingForRematch: function()
+    {
+        var state = game.state.getCurrentState();
+
+        state.currentGameState = state.GameStates.WaitingForRematch;
+
+        game.announce("You can't have enough");
+    },
+
+    goBackToMainMenu: function()
+    {
+        $.ajax(
+            "/match",
+            {
+                method: "DELETE",
+                data: JSON.stringify(
+                    {
+                        matchId: matchId,
+                        playerId: playerId
+                    }
+                ),
+                processData: false,
+                headers:{
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        game.state.start("mainMenuState");
+    },
+
+
+    pollForRematch: function()
+    {
+        $.ajax(
+            "/rematch",
+            {
+                method: "PUT",
+                data: JSON.stringify({
+                    matchId: matchId,
+                    playerId: playerId
+                }),
+                processData: false,
+                headers:{
+                    "Content-Type": "application/json"
+                },
+                success: this.processRematchResponse
+            }
+        )
+    },
+
+    processRematchResponse: function(response)
+    {
+        var state = game.state.getCurrentState();
+
+        if (response == -1)
+        {
+            state.startAbandonedState();
+        }
+        else if (response == 1)
+        {
+            game.state.start("onlineMultiplayerState");
+        }
+    },
+
+    startAbandonedState: function()
+    {
+        this.currentGameState = this.GameStates.Abandoned;
+        game.announce("You were abandoned");
     }
 }

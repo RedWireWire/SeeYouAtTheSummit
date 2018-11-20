@@ -46,7 +46,7 @@ public class PlayerController {
 	}
 
 	@DeleteMapping(value = "/match")
-	public void UnregisterFromMatch(MatchRegisterResult matchRegistration)
+	public void UnregisterFromMatch(@RequestBody MatchRegisterResult matchRegistration)
 	{
 		if (matches[matchRegistration.matchId] != null)
 		{
@@ -95,8 +95,12 @@ public class PlayerController {
 		//Process the update
 		match.GetPlayerById(playerId).lastUpdate = receivedUpdate;
 		
-		//Return the opponent's update
-		return match.GetOtherPlayerById(playerId).lastUpdate;
+		Player otherPlayer = match.GetOtherPlayerById(playerId);
+		if (otherPlayer == null)
+		{
+			return new PlayerUpdate();
+		}
+		else return otherPlayer.lastUpdate;
 	}
 	
 	@PostMapping(value = "/tetrisupdate/{matchId}")
@@ -114,7 +118,37 @@ public class PlayerController {
 		return opponent.GetTetrisUpdate();
 	}
 	
+	//After the match
+	@PostMapping(value = "/rematch")
+	public void ApplyForRematch(@RequestBody MatchRegisterResult request)
+	{
+		Match match = matches[request.matchId];
+		match.GetPlayerById(request.playerId).wantsRematch = true;
+		
+		match.GetPlayerById(1).notifiedAboutRematch = false;
+		match.GetPlayerById(2).notifiedAboutRematch = false;
+	}
 	
+	@PutMapping(value = "/rematch")
+	public int GetRematch(@RequestBody MatchRegisterResult request)
+	{
+		Match oldMatch = matches[request.matchId];
+		
+		//If a player left, -1
+		if (!oldMatch.IsFull()) return -1;
+		else if (oldMatch.BothWantRematch())
+		{
+			//Start the rematch once both players have been notified about it
+			oldMatch.GetPlayerById(request.playerId).notifiedAboutRematch = true;
+			if (oldMatch.BothKnowAboutRematch())
+			{
+				DoRematch(request.matchId);
+			}
+			
+			return 1;
+		}
+		else return 0;
+	}
 	
 	
 	//Matchmaking utilities
@@ -147,7 +181,7 @@ public class PlayerController {
 			if (matches[i] == null)
 				{
 					System.out.println("Creating match with id " + i);
-					matches[i] = new Match(i);
+					matches[i] = new Match();
 					return new MatchRegisterResult(i, 1);
 				}
 		}
@@ -155,20 +189,16 @@ public class PlayerController {
 		throw(new IndexOutOfBoundsException());
 	}
 	
-	
-	
-	//Input types
-	private class MatchRegisterResult
+	private void DoRematch(int matchId)
 	{
-		public int matchId;
-		public int playerId;
+		Match newMatch = new Match();
+		matches[matchId] = newMatch;
 		
-		public MatchRegisterResult(int _matchId, int _playerId)
-		{
-			matchId = _matchId;
-			playerId = _playerId;
-		}
+		newMatch.SetPlayerById(new Player(), 1);
+		newMatch.SetPlayerById(new Player(), 2);	
 	}
+	
+	
 }
 
 

@@ -1,18 +1,18 @@
 package RedWireWire.SeeYouAtTheSummit;
 
 public class Match {
-
-	private int id;
+	
+	public boolean hasStarted = false;
 	
 	private Player player1;
 	private Player player2;
 	
 	private boolean isReady = false; 
-	private boolean hasStarted = false;
 	
 	//Registering
 	public int GetOpenPosition()
 	{
+		if (hasStarted) return -1;
 		if (player1 == null) return 1;
 		else if (player2 == null) return 2;
 		else return -1;
@@ -65,15 +65,26 @@ public class Match {
  		else return false;
  	}
  	
+ 	public boolean BothWantRematch()
+ 	{
+ 		return (player1.wantsRematch && player2.wantsRematch);
+ 	}
  	
- 	private boolean IsFull()
+ 	public boolean BothKnowAboutRematch()
+ 	{
+ 		return (player1.notifiedAboutRematch && player2.notifiedAboutRematch);
+ 	}
+ 	
+ 	
+ 	
+ 	public boolean IsFull()
 	{
 		if (player1 != null && player2 != null) return true;
 		else return false;
 	}
 	
-	public Match(int _id)
+	public Match()
 	{
-		id = _id;
+		
 	}
 }

@@ -6,6 +6,9 @@ public class Player {
 
 	public boolean inAcceptance = false;
 	
+	public boolean wantsRematch = false;
+	public boolean notifiedAboutRematch = false;
+	
 	public PlayerUpdate lastUpdate = null;
 	
 	
@@ -49,7 +52,7 @@ public class Player {
 		{
 			for (int i = 0; i < tetrisUpdates.size(); i++)
 			{
-				TetrisUpdate update = tetrisUpdates.get(0);
+				TetrisUpdate update = tetrisUpdates.get(i);
 				if (!update.hasBeenRead)
 				{
 					update.hasBeenRead = true;

@@ -6,6 +6,7 @@ public class PlayerUpdate {
 	public int x;
 	public int y;
 	public int animationCode;
+	public boolean isDead;
 	
 	public PlayerUpdate()
 	{

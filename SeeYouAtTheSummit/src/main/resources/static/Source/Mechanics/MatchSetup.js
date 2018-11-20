@@ -217,3 +217,25 @@ game.getPlayerScreenTopOvershoot = function(player)
         return 0;
     }
 }
+
+//Others
+game.announce = function(message)
+{ 
+    game.deletePreviousAnnouncement();
+
+    //Message setup
+    var style = { font: "65px Arial", fill: "#DF4BB3", align: "right" };
+
+    //Show it
+    game.announcementText = game.add.text(gameWidth / 2 - 100, gameHeight / 2, message, style);
+    console.log(message);
+    game.announcementText.fixedToCamera = true;
+}
+
+game.deletePreviousAnnouncement = function ()
+{
+    if (game.announcementText)
+    {
+        game.announcementText.destroy();
+    }
+}
