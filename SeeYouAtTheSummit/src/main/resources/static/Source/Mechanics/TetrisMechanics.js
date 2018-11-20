@@ -12,7 +12,7 @@ game.pieceSpawnScreenBottomMarginInCubes = 15;
 game.pieceSpawnXFromCenterInCubes = 5;
 
 //Timings
-game.autoDescendTime = 45;
+game.autoDescendTime = 10000//45;
 game.nextPieceWaitTime = 2000;  //In miliseconds
 
 //Brick system
@@ -21,7 +21,7 @@ game.deleteCondition = 5;
 
 
 //Creation
-game.nextPiece = function(playerNumber, state, controlScheme, savingFunction)
+game.nextPiece = function(playerNumber, state, controlScheme, savingFunction, mustBeSentToServer)
 {
     //Create the piece
     var screenCenterX = gameWidth / 2;
@@ -35,18 +35,20 @@ game.nextPiece = function(playerNumber, state, controlScheme, savingFunction)
     y -= game.pieceSpawnScreenBottomMarginInCubes * game.scaledCubeSize;
 
 
-    var piece = game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme);
-    piece.savingFunction = savingFunction;
-    //Assign the piece
-    savingFunction(state, piece);
+    game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme, savingFunction, mustBeSentToServer);
 }
 
-game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup, controlScheme)
+//Null controlScheme means it's online controlled
+game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup, controlScheme, savingFunction, mustBeSentToServer)
 {
     var pieza = new Object();
     pieza.playerNumber = playerNumber;
+    pieza.spawnX = Xpieza;
+    pieza.spawnY = Ypieza;
+    pieza.mustBeSentToServer = mustBeSentToServer;
     
     //Creation of the desired shape
+    pieza.shape = estilo;
     switch(estilo){
         case 1:
         //Creación de la pieza L
@@ -150,6 +152,11 @@ game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup
 
     //Input
     pieza.controlScheme = controlScheme;
+
+    //Saving
+    pieza.savingFunction = savingFunction;
+    pieza.savingFunction(game.state.getCurrentState(), pieza);
+
     return pieza;
 }
 
@@ -175,8 +182,13 @@ game.directPiece = function(piezaTetris, state)
             //Rotation
             if (!Rkey.isDown) { piezaTetris.keyR = false; }
             if (Rkey.isDown && !piezaTetris.keyR ){
-                game.attemptToRotatePiece(piezaTetris, state.groundPhysicsGroup, state.frozenPiecesPhysicsGroup);
+                var success = game.attemptToRotatePiece(
+                    piezaTetris, state.groundPhysicsGroup, state.frozenPiecesPhysicsGroup);
                 piezaTetris.keyR = true;
+                if (success && piezaTetris.mustBeSentToServer)
+                {
+                    state.postTetrisRotate();
+                }
             }
 
             //Temporizador que marca el ritmo de bajada de la pieza, cada pieza tiene su propio temporizador.
@@ -195,14 +207,24 @@ game.directPiece = function(piezaTetris, state)
             //Mover pieza a la izquierda.
             if (!leftKey.isDown) { piezaTetris.keyleft = false; }
             if (leftKey.isDown && !piezaTetris.keyleft) {
-                game.attemptToMovePiece(piezaTetris, -1);
+                var success = game.attemptToMovePiece(piezaTetris, -1);
                 piezaTetris.keyleft = true;
+                if (success && piezaTetris.mustBeSentToServer)
+                {
+                    state.postTetrisMove(piezaTetris, "LEFT");
+                }
+                
             }
             //Mover pieza a la derecha.
             if (!rightKey.isDown) { piezaTetris.keyright = false; }
             if (rightKey.isDown && !piezaTetris.keyright) {
-                game.attemptToMovePiece(piezaTetris, 1);
+                var success = game.attemptToMovePiece(piezaTetris, 1);
                 piezaTetris.keyright = true;
+                
+                if (success && piezaTetris.mustBeSentToServer)
+                {
+                    state.postTetrisMove(piezaTetris, "RIGHT");
+                }
             }
             piezaTetris.moveTimer++;
         }
@@ -217,14 +239,16 @@ game.attemptToMovePiece = function(piece, direction)
 {
     if(game.isAllowedToMove(piece, direction)){
         game.movePiece(piece, direction);
+        return true;
     }
+    else return false;
 }
 
 game.movePiece = function(piece, direction)
 {
     for (let i = 0; i < 4; i++)
     {
-        piece.bricks[i].body.x += direction * game.scaledCubeSize;
+        piece.bricks[i].x += direction * game.scaledCubeSize;
     }
 }
 
@@ -269,8 +293,9 @@ game.lowerPiece = function(piece, state)
     {
         for (let i = 0; i < 4; i++)
         {
-            piece.bricks[i].body.y += game.scaledCubeSize;
+            piece.bricks[i].y += game.scaledCubeSize;
         }
+        if (piece.mustBeSentToServer) state.postTetrisMove(piece, "DOWN");
     }
 }
 
@@ -282,7 +307,9 @@ game.attemptToRotatePiece = function(piece, groundPhysicsGroup, frozenPiecesPhys
         game.rotatePiece(piece);
         //Se pone el temporizador de caida de la pieza a 0.
         if (game.piezaTocandoSuelo(piece, groundPhysicsGroup, frozenPiecesPhysicsGroup)) piece.moveTimer = 0;
+        return true;
     }
+    else return false;
 }
 
 game.rotatePiece = function(pieza)
@@ -290,147 +317,147 @@ game.rotatePiece = function(pieza)
     for(var i=0;i<4;i++){
 
         var brick=pieza.bricks[i];
-            switch(brick.code){
+        switch(brick.code){
 
-                case "L":
-                //Rotación de L
-                    if(brick.index==0){
-                        brick.body.x -= (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==1 || brick.index==11){
-                        brick.body.x -= game.scaledCubeSize;
-                        brick.body.y -= game.scaledCubeSize;
-                        brick.index += 4;
-                    }else if(brick.index==3 || brick.index==9){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        brick.index+=4;
-                    }else if(brick.index==4){
-                        brick.body.y -= (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==5 || brick.index==15){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y -= game.scaledCubeSize;
-                        if(brick.index==15){brick.index=3;}
-                        else{brick.index += 4;}
-                    }else if(brick.index==7 || brick.index==13){
-                        brick.body.x -= game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        if(brick.index==13){brick.index=1;}
-                        else{brick.index+=4;}
-                    }else if(brick.index==8){
-                        brick.body.x += (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==12){
-                        brick.index = 0;
-                        brick.body.y += (2*game.scaledCubeSize);
-                    }
-                break;
-                
-                case "T":
-                    //Rotacion de T
-                    if(brick.index==1 || brick.index==10 || brick.index==15){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y -= game.scaledCubeSize;
-                        if(brick.index==15){brick.index=3;}
-                        else{brick.index += 4;}
-                    }else if(brick.index==2 || brick.index==7 || brick.index==9){
-                        brick.body.x -= game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        brick.index += 4;
-                    }else if(brick.index==3 || brick.index==5 || brick.index==14){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        if(brick.index==14){brick.index=2;}
-                        else{brick.index+=4;}
-                    }else if(brick.index==6 || brick.index==11 || brick.index==13){
-                        brick.body.x -= game.scaledCubeSize;
-                        brick.body.y -= game.scaledCubeSize;
-                        if(brick.index==13){brick.index=1;}
-                        else{brick.index += 4;}
-                    }
-                break;
-
-                case "Z":
-                    //Rotación de Z
-                    if(brick.index==1 ||brick.index==7){
-                        brick.body.x -= game.scaledCubeSize;
-                        brick.body.y -= game.scaledCubeSize;
-                        brick.index += 4;
-                    }else if(brick.index==2){
-                        brick.body.y -= (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==3 || brick.index==13){
-                        brick.body.x -= game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        if(brick.index==3){brick.index+=4;}
-                        else {brick.index=1;}
-                    }else if(brick.index==5 || brick.index==11){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y -= game.scaledCubeSize;
-                        brick.index += 4;
-                    }else if(brick.index==6){
-                        brick.body.x += (2*game.scaledCubeSize);
-                        brick.index+=4;
-                    }else if(brick.index==9 || brick.index==15){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        if(brick.index==9){brick.index+=4;}
-                        else {brick.index=3;}
-                    }else if(brick.index==10){
-                        brick.body.y += (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==14){
-                        brick.index=2;
-                        brick.body.x -= (2*game.scaledCubeSize);
-                    }
+            case "L":
+            //Rotación de L
+                if(brick.index==0){
+                    brick.x -= (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==1 || brick.index==11){
+                    brick.x -= game.scaledCubeSize;
+                    brick.y -= game.scaledCubeSize;
+                    brick.index += 4;
+                }else if(brick.index==3 || brick.index==9){
+                    brick.x += game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    brick.index+=4;
+                }else if(brick.index==4){
+                    brick.y -= (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==5 || brick.index==15){
+                    brick.x += game.scaledCubeSize;
+                    brick.y -= game.scaledCubeSize;
+                    if(brick.index==15){brick.index=3;}
+                    else{brick.index += 4;}
+                }else if(brick.index==7 || brick.index==13){
+                    brick.x -= game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    if(brick.index==13){brick.index=1;}
+                    else{brick.index+=4;}
+                }else if(brick.index==8){
+                    brick.x += (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==12){
+                    brick.index = 0;
+                    brick.y += (2*game.scaledCubeSize);
+                }
             break;
-                
-            case "I":
-                //Rotación de I
-                    if(brick.index==0){
-                        brick.body.x=brick.body.x - (2*game.scaledCubeSize);
-                        brick.body.y=brick.body.y - (2*game.scaledCubeSize);
-                        brick.index+=4;
-                    }else if(brick.index==1 || brick.index==11){
-                        brick.body.x=brick.body.x -game.scaledCubeSize;
-                        brick.body.y=brick.body.y - game.scaledCubeSize;
-                        brick.index+=4;
-                    }else if(brick.index==2 || brick.index==10 || brick.index==5 || brick.index==13){
-                        brick.body.x=brick.body.x;
-                        brick.body.y=brick.body.y;
-                        if(brick.index==13){brick.index=1;}
-                        else{brick.index+=4}
-                    }else if(brick.index==3 || brick.index==9){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        brick.index+=4;
-                    }else if(brick.index==4 || brick.index==14){
-                        brick.body.x += game.scaledCubeSize;
-                        brick.body.y=brick.body.y - game.scaledCubeSize;
-                        if(brick.index==4){brick.index+=4;}
-                        else{brick.index=2}
-                    }else if(brick.index==6 || brick.index==12){
-                        brick.body.x=brick.body.x - game.scaledCubeSize;
-                        brick.body.y += game.scaledCubeSize;
-                        if(brick.index==6){brick.index+=4;}
-                        else{brick.index=0}
-                    }else if(brick.index==7){
-                        brick.body.x=brick.body.x - (2*game.scaledCubeSize);
-                        brick.body.y += (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==8){
-                        brick.body.x += (2*game.scaledCubeSize);
-                        brick.body.y += (2*game.scaledCubeSize);
-                        brick.index += 4;
-                    }else if(brick.index==15){
-                        brick.index=3;
-                        brick.body.x += (2*game.scaledCubeSize);
-                        brick.body.y -= (2*game.scaledCubeSize);
-                    }
-                break;
-            }
-        }
+            
+            case "T":
+                //Rotacion de T
+                if(brick.index==1 || brick.index==10 || brick.index==15){
+                    brick.x += game.scaledCubeSize;
+                    brick.y -= game.scaledCubeSize;
+                    if(brick.index==15){brick.index=3;}
+                    else{brick.index += 4;}
+                }else if(brick.index==2 || brick.index==7 || brick.index==9){
+                    brick.x -= game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    brick.index += 4;
+                }else if(brick.index==3 || brick.index==5 || brick.index==14){
+                    brick.x += game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    if(brick.index==14){brick.index=2;}
+                    else{brick.index+=4;}
+                }else if(brick.index==6 || brick.index==11 || brick.index==13){
+                    brick.x -= game.scaledCubeSize;
+                    brick.y -= game.scaledCubeSize;
+                    if(brick.index==13){brick.index=1;}
+                    else{brick.index += 4;}
+                }
+            break;
+
+            case "Z":
+                //Rotación de Z
+                if(brick.index==1 ||brick.index==7){
+                    brick.x -= game.scaledCubeSize;
+                    brick.y -= game.scaledCubeSize;
+                    brick.index += 4;
+                }else if(brick.index==2){
+                    brick.y -= (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==3 || brick.index==13){
+                    brick.x -= game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    if(brick.index==3){brick.index+=4;}
+                    else {brick.index=1;}
+                }else if(brick.index==5 || brick.index==11){
+                    brick.x += game.scaledCubeSize;
+                    brick.y -= game.scaledCubeSize;
+                    brick.index += 4;
+                }else if(brick.index==6){
+                    brick.x += (2*game.scaledCubeSize);
+                    brick.index+=4;
+                }else if(brick.index==9 || brick.index==15){
+                    brick.x += game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    if(brick.index==9){brick.index+=4;}
+                    else {brick.index=3;}
+                }else if(brick.index==10){
+                    brick.y += (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==14){
+                    brick.index=2;
+                    brick.x -= (2*game.scaledCubeSize);
+                }
+        break;
+            
+        case "I":
+            //Rotación de I
+                if(brick.index==0){
+                    brick.x=brick.x - (2*game.scaledCubeSize);
+                    brick.y=brick.y - (2*game.scaledCubeSize);
+                    brick.index+=4;
+                }else if(brick.index==1 || brick.index==11){
+                    brick.x=brick.x -game.scaledCubeSize;
+                    brick.y=brick.y - game.scaledCubeSize;
+                    brick.index+=4;
+                }else if(brick.index==2 || brick.index==10 || brick.index==5 || brick.index==13){
+                    brick.x=brick.x;
+                    brick.y=brick.y;
+                    if(brick.index==13){brick.index=1;}
+                    else{brick.index+=4}
+                }else if(brick.index==3 || brick.index==9){
+                    brick.x += game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    brick.index+=4;
+                }else if(brick.index==4 || brick.index==14){
+                    brick.x += game.scaledCubeSize;
+                    brick.y=brick.y - game.scaledCubeSize;
+                    if(brick.index==4){brick.index+=4;}
+                    else{brick.index=2}
+                }else if(brick.index==6 || brick.index==12){
+                    brick.x=brick.x - game.scaledCubeSize;
+                    brick.y += game.scaledCubeSize;
+                    if(brick.index==6){brick.index+=4;}
+                    else{brick.index=0}
+                }else if(brick.index==7){
+                    brick.x=brick.x - (2*game.scaledCubeSize);
+                    brick.y += (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==8){
+                    brick.x += (2*game.scaledCubeSize);
+                    brick.y += (2*game.scaledCubeSize);
+                    brick.index += 4;
+                }else if(brick.index==15){
+                    brick.index=3;
+                    brick.x += (2*game.scaledCubeSize);
+                    brick.y -= (2*game.scaledCubeSize);
+                }
+            break;
+        }   
+    }
 }
 
 game.allowRotate = function(piece, groundPhysicsGroup, frozenPiecesPhysicsGroup)
@@ -465,8 +492,8 @@ game.guardarPiece = function(piezaRotar,indOriginal,originalX,originalY)
 {
     for(let i=0;i<4;i++){
         indOriginal[i]=piezaRotar.bricks[i].index;
-        originalX[i]=piezaRotar.bricks[i].body.x;
-        originalY[i]=piezaRotar.bricks[i].body.y;
+        originalX[i]=piezaRotar.bricks[i].x;
+        originalY[i]=piezaRotar.bricks[i].y;
     }
 }
 
@@ -474,8 +501,8 @@ game.cargarPiece = function(piezaRotar,indOriginal,originalX,originalY)
 {
     for(var i=0;i<4;i++){
         piezaRotar.bricks[i].index=indOriginal[i];
-        piezaRotar.bricks[i].body.x=originalX[i];
-        piezaRotar.bricks[i].body.y=originalY[i];
+        piezaRotar.bricks[i].x=originalX[i];
+        piezaRotar.bricks[i].y=originalY[i];
     }
 }
 
@@ -506,8 +533,20 @@ game.freezePiece = function(piece, state)
         brick.alpha = 1;
     }
 
+    if (piece.mustBeSentToServer)
+    {
+        state.postTetrisFreeze();
+    }
+
     game.checkForBrickDestruction(state.brickPositions);
-    setTimeout(game.nextPiece, game.nextPieceWaitTime, piece.playerNumber, state, piece.controlScheme, piece.savingFunction);
+
+    
+
+    //Create another if trhis isn't an online opponent's piece
+    if (piece.controlScheme != null)
+    {
+        setTimeout(game.nextPiece, game.nextPieceWaitTime, piece.playerNumber, state, piece.controlScheme, piece.savingFunction, piece.mustBeSentToServer);
+    }
 }
 
 game.pieceIsAllowedToFreeze = function(piece, state)

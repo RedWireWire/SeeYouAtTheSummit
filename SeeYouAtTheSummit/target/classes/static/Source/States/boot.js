@@ -5,6 +5,12 @@ var bootState = function(game) {
 bootState.prototype = {
 
     preload: function() {
+        game.loadLoadingScreen();
+        
+        //Configura phaser
+        game.stage.disableVisibilityChange = true;
+
+        
         //Inicializa el sistema de f�sicas
         game.physics.startSystem(Phaser.Physics.ARCADE);
 

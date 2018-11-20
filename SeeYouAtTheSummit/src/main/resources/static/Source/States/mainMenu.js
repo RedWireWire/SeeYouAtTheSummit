@@ -40,6 +40,7 @@ var secondMenu=false;
 mainMenuState.prototype = {
 
     preload: function() {
+
         //Load sprites
         game.load.image("cloud", "Assets/MainMenu/NubeMenuPrincipal.png");
         game.load.image("title", "Assets/MainMenu/TituloDeJuego.png");
@@ -368,7 +369,7 @@ mainMenuState.prototype = {
     testRest: function()
     {
         var object = JSON.stringify({playerID: 11});
-        $.ajax("/test", 
+        $.ajax("/acceptance/0", 
         {
             method: "POST",
             data: object,
