@@ -31,6 +31,12 @@ var startFadeDuration = 3000;
 //Input
 var gameStartKey = Phaser.Keyboard.ENTER;
 
+//Buttons
+var buttonsColorOut=0xFF9068;
+var buttonsColorOver=0xDF4BB3;
+var firstMenu=false;
+var secondMenu=false;
+
 mainMenuState.prototype = {
 
     preload: function() {
@@ -39,6 +45,7 @@ mainMenuState.prototype = {
         game.load.image("title", "Assets/MainMenu/TituloDeJuego.png");
         game.load.image("pressEnter", "Assets/MainMenu/PressEnter.png");
         game.load.image("menuBackground", "Assets/MainMenu/FondoMenuPrincipalSinCielo.png");
+        this.loadButtons();
 
         //Initialize variables
         this.clouds = new Array(0);
@@ -70,6 +77,84 @@ mainMenuState.prototype = {
         //this.testRest();
     },
 
+    createFirstMenuButtons:function(){
+        var generalX=500;
+        var initialY=300;
+        var variacion=100;
+        firstMenu=true;
+
+        buttonMultiplayer = game.add.button(generalX,initialY, 'buttonMultiplayer', this.createSecondMenuButtons, this, 0);
+        buttonSingleplayer = game.add.button(generalX,300+variacion, 'buttonSinglePlayer', this.SinglePlayer, this, 0);
+        buttonTraining = game.add.button(generalX,300+(2*variacion), 'buttonTraining', this.Training, this, 0);
+        //Escalado de botones.
+        buttonMultiplayer.scale.x = 0.7;
+        buttonMultiplayer.scale.y = 0.7;
+        buttonTraining.scale.x = 0.7;
+        buttonTraining.scale.y = 0.7;
+        //Tintado de botones
+        buttonMultiplayer.tint=buttonsColorOut;
+        buttonSingleplayer.tint=buttonsColorOut;
+        buttonTraining.tint=buttonsColorOut;
+    },
+
+    destroyButtons:function(){
+        if(!firstMenu){
+            buttonMultiplayer.destroy();
+            buttonSingleplayer.destroy();
+            buttonTraining.destroy();
+        }
+        if(!secondMenu){
+            buttonOnline.destroy();
+            buttonLocal.destroy();
+        }
+    },
+
+    createSecondMenuButtons:function(){
+        var generalX=500;
+        var initialY=300;
+        var variacion=100;
+        var setgeneralx=20;
+
+        firstMenu=false;
+        secondMenu=true;
+        this.destroyButtons();
+        buttonOnline = game.add.button(generalX + (setgeneralx*2),initialY, 'buttonOnline', this.OnlineMultiplayer, this, 0);
+        buttonLocal = game.add.button(generalX + setgeneralx,initialY+variacion, 'buttonLocal', this.LocalMultiplayer, this, 0);
+        //Tintado de botones.
+        buttonOnline.tint=buttonsColorOut;
+        buttonLocal.tint=buttonsColorOut;
+        
+    },
+
+    LocalMultiplayer: function(){
+        game.state.start("localMultiplayerState");
+    },
+
+    OnlineMultiplayer: function(){
+        game.state.start("onlineMultiplayerState");
+    },
+
+    SinglePlayer: function(){
+        game.state.start("singlePlayerState");
+    },
+
+    Training: function (){
+        game.state.start("trainingState");
+    },
+
+    ColorOver: function (button){
+        button.tint=buttonsColorOver;
+    },
+
+    ColorOut:function (button){
+        button.tint=buttonsColorOut;
+    },
+
+    changeButtonsColors: function(button){
+        button.onInputOver.add(this.ColorOver,this);
+        button.onInputOut.add(this.ColorOut,this);
+    },
+    
     createBackground: function()
     {
         var background = this.group.create(0, 0, "menuBackground");
@@ -198,6 +283,14 @@ mainMenuState.prototype = {
         this.updateTitleFade();
         this.updateStartMessageFade();
         this.updateClouds();
+        if(firstMenu){
+            this.changeButtonsColors(buttonMultiplayer);
+            this.changeButtonsColors(buttonSingleplayer);
+            this.changeButtonsColors(buttonTraining);
+        }else if(secondMenu){
+            this.changeButtonsColors(buttonLocal);
+            this.changeButtonsColors(buttonOnline);
+        }
     },
 
     updateTitleFade: function()
@@ -265,7 +358,10 @@ mainMenuState.prototype = {
     {
         if (game.input.keyboard.isDown(gameStartKey))
         {
-            game.state.start("matchMakingState");
+            if(!firstMenu){
+                this.startMessage.destroy();
+                this.createFirstMenuButtons();
+            }
         }
     },
 
@@ -284,5 +380,13 @@ mainMenuState.prototype = {
                 "Content-Type": "application/json"
             },
         });
-    }
+    },
+
+    loadButtons: function(){
+        game.load.image("buttonMultiplayer", "Assets/MainMenu/Multiplayer.png");
+        game.load.image("buttonSinglePlayer", "Assets/MainMenu/SinglePlayer.png");
+        game.load.image("buttonTraining", "Assets/MainMenu/Training.png");
+        game.load.image("buttonOnline", "Assets/MainMenu/Online.png");
+        game.load.image("buttonLocal", "Assets/MainMenu/Local.png");
+    },
 }
