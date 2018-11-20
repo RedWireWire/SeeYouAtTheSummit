@@ -5,6 +5,8 @@ var bootState = function(game) {
 bootState.prototype = {
 
     preload: function() {
+        game.loadLoadingScreen();
+        
         //Configura phaser
         game.stage.disableVisibilityChange = true;
 

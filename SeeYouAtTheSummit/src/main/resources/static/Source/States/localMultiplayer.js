@@ -13,6 +13,7 @@ localMultiplayerState.prototype = {
 
     preload: function() 
     {
+        game.startLoadingScreen();
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
@@ -30,6 +31,8 @@ localMultiplayerState.prototype = {
     },    
 
     create: function() {
+        game.stopLoadingScreen();
+        
         game.setupLevel(this);
 
         game.initializeBackgrounds(this);

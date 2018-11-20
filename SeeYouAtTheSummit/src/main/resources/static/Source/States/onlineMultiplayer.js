@@ -15,6 +15,8 @@ onlineMultiplayerState.prototype = {
     //Initialization
     preload: function() 
     {
+        game.startLoadingScreen();
+
         this.isInAcceptance = false;
         this.controlledPlayerNumber = playerId;
 
@@ -33,6 +35,8 @@ onlineMultiplayerState.prototype = {
     },    
 
     create: function() {
+        game.stopLoadingScreen();
+        
         game.setupLevel(this);
 
         game.initializeBackgrounds(this);
@@ -275,7 +279,9 @@ onlineMultiplayerState.prototype = {
                 },
                 
                 //success: function(data) { console.log("Sent " + data.actionCode);},
-                //error: function(){ $.ajax(this); } 
+                error: function() {
+                    $.ajax(this);
+                }
             }
         )
     },
@@ -299,6 +305,9 @@ onlineMultiplayerState.prototype = {
                 headers:
                 {
                     "Content-Type": "application/json"
+                },
+                error: function() {
+                    $.ajax(this);
                 }
             }
         )
@@ -322,6 +331,9 @@ onlineMultiplayerState.prototype = {
                 headers:
                 {
                     "Content-Type": "application/json"
+                },
+                error: function() {
+                    $.ajax(this);
                 }
             }
         )

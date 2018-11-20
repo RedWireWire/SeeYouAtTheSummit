@@ -8,6 +8,7 @@ game.playerSpawnDistanceFromCenterXFraction = 4;
 
 game.groundHeightInCubes = 5;
 
+
 //Camera
 game.cameraAutoScrollSpeed = 0.003;//0.3;
 game.cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
@@ -17,6 +18,29 @@ game.numberOfBackgrounds = 5;
 game.backgroundParallaxFactor = 0.3;
 
 //Loading
+game.loadLoadingScreen = function()
+{
+    game.load.image("loadingScreenBackground", "Assets/EscenarioYFondos/Loading.png");
+}
+
+game.startLoadingScreen = function()
+{
+    var loadingScreen = game.add.sprite(0, 0, "loadingScreenBackground");
+    loadingScreen.anchor.setTo(0, 0);
+    loadingScreen.width = gameWidth;
+    loadingScreen.height = gameHeight;
+    loadingScreen.x = 0;
+    loadingScreen.y = 0;
+
+    game.loadingBackground = loadingScreen;
+}
+
+game.stopLoadingScreen = function()
+{
+    game.loadingBackground.destroy();
+}
+
+
 game.loadBackgrounds = function()
 {
     for (let i = 0; i < game.numberOfBackgrounds; i++)
@@ -24,6 +48,9 @@ game.loadBackgrounds = function()
         game.load.image("background" + i, "Assets/EscenarioYFondos/Fondo" + i + ".png");
     }
 }
+
+
+
 
 //Initialization
 game.initializePhysicsGroups = function(state)
