@@ -8,7 +8,7 @@ var playerId;
 matchMakingState.prototype = {
 
     //Enables some skipping functionality for testing
-    allowShortcuts: true,
+    allowShortcuts: false,
 
     preload: function() {
         this.registered = false;
@@ -16,6 +16,8 @@ matchMakingState.prototype = {
 
     create: function() {
         if (this.allowShortcuts) this.showMatchMakingShortcuts();
+        game.startLoadingScreen();
+        this.attemptToJoinMatch();
     },
 
     //TMP

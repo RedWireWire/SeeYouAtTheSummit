@@ -132,7 +132,7 @@ mainMenuState.prototype = {
     },
 
     OnlineMultiplayer: function(){
-        game.state.start("onlineMultiplayerState");
+        game.state.start("matchMakingState");
     },
 
     SinglePlayer: function(){
