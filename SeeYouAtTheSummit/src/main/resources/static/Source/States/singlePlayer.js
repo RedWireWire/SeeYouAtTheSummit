@@ -46,7 +46,7 @@ singlePlayerState.prototype = {
 
         //Player pieces
         game.nextPiece(1, this, this.player1.controlScheme, 
-            function(state, piece) { state.player1Piece = piece;});
+            function(state, piece) { state.player1Piece = piece;}, false, true);
     },
 
     update: function() {
@@ -87,6 +87,13 @@ singlePlayerState.prototype = {
         }
     },
 
+    render: function()
+    {
+        for (i = 0; i < 4; i++)
+        {
+            game.debug.body(this.player1Piece.bricks[i]);
+        }
+    },
 
     //TMP
     updateScore: function()
