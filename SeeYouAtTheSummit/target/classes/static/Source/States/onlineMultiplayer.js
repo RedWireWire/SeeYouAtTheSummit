@@ -75,7 +75,8 @@ onlineMultiplayerState.prototype = {
         );
         this.onlineSyncedPlayer.playerNumber = opponentNumber;
         this.onlineSyncedPlayer.isDead = false;
-        
+        this.initializeOpponentTetrisUpdateBuffer();
+
         //Player piece
         game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
             function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
@@ -122,6 +123,7 @@ onlineMultiplayerState.prototype = {
             //Server syncing. Handles opponent syncing too.
             this.serverUpdate(this.controlledPlayer);
             this.pollOpponentTetrisAction();
+            this.processOpponentTetrisUpdates(this.opponentTetrisUpdateBuffer);
 
             //Camera control
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
@@ -378,48 +380,78 @@ onlineMultiplayerState.prototype = {
                     "Content-Type": "application/json"
                 },
 
-                success: this.processOpponentTetrisUpdate
+                success: this.bufferOpponentTetrisUpdate
             }
         )
     },
 
-    processOpponentTetrisUpdate: function(update)
+    initializeOpponentTetrisUpdateBuffer: function(piece)
     {
-        if (update.actionCode != "NULL") console.log("Processing " + update.actionCode);
+        this.opponentTetrisUpdateBuffer = new Array();
+    },
+
+    bufferOpponentTetrisUpdate: function(update)
+    {
+        var buffer = game.state.getCurrentState().opponentTetrisUpdateBuffer;
+
+        buffer.push(update);
         
-        switch (update.actionCode)
+        //Comentado para mejorar la latencia. Si ocurren problemas de orden de comandos, esto puede descomentarse.
+        //Ordena los comandos en función de su timeStamp
+        /*
+        buffer.sort(function(a, b) {
+            return a.timeStamp - b.timeStamp;
+        })
+        */
+    },
+
+    processOpponentTetrisUpdates: function(buffer)
+    {
+        var piece;
+        //Process every buffered update
+        for (let i = 0; i < buffer.length; i++)
         {
-            case "NULL":
-                return;
+            piece = this.onlineSyncedPiece;
+            //Unbuffers the update
+            var update = buffer.shift();
 
-            case "CREATE":
-                game.createPiece(update.shape, update.xPosition, update.yPosition, update.playerId, 
-                    game.state.getCurrentState().piecePhysicsGroup, null, 
-                    function(state, piece) {state.onlineSyncedPiece = piece;}, false);
-                break;
+            if (update.actionCode != "NULL") console.log("Processing " + update.actionCode);
+        
+            switch (update.actionCode)
+            {
+                case "NULL":
+                    break;
 
-            case "ROTATE":
-                game.rotatePiece(game.state.getCurrentState().onlineSyncedPiece);
-                break;
+                case "CREATE":
+                    game.createPiece(update.shape, update.xPosition, update.yPosition, update.playerId, 
+                        game.state.getCurrentState().piecePhysicsGroup, null, 
+                        function(state, piece) {state.onlineSyncedPiece = piece;}, false);
+                    break;
 
-            case "RIGHT":
-                game.movePiece(game.state.getCurrentState().onlineSyncedPiece, 1);
-                break;
+                case "ROTATE":
+                    game.rotatePiece(piece);
+                    break;
 
-            case "LEFT":
-                game.movePiece(game.state.getCurrentState().onlineSyncedPiece, -1);
-                break;
-            
-            case "DOWN":
-                var state = game.state.getCurrentState();
-                game.lowerPiece(state.onlineSyncedPiece, state);
-                break;
+                case "RIGHT":
+                    game.movePiece(piece, 1);
+                    break;
 
-            case "FREEZE":
-                var state = game.state.getCurrentState();
-                game.freezePiece(state.onlineSyncedPiece, state);
-                break;
+                case "LEFT":
+                    game.movePiece(piece, -1);
+                    break;
+                
+                case "DOWN":
+                    var state = game.state.getCurrentState();
+                    game.lowerPiece(piece, state);
+                    break;
+
+                case "FREEZE":
+                    var state = game.state.getCurrentState();
+                    game.freezePiece(piece, state);
+                    break;
+            }
         }
+        
     },
 
     //////////////

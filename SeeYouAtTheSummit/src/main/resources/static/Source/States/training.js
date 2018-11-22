@@ -47,7 +47,7 @@ trainingState.prototype = {
         game.camera.y = game.camera.y - 250;
         //Player pieces
         game.nextPiece(1, this, this.player1.controlScheme, 
-            function(state, piece) { state.player1Piece = piece;});
+            function(state, piece) { state.player1Piece = piece;}, false, true);
     },
 
     update: function() {
