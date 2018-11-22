@@ -41,6 +41,7 @@ game.ControlSchemes =
         jump: Phaser.Keyboard.SPACEBAR,
         right: Phaser.Keyboard.D,
         left: Phaser.Keyboard.A,
+        pose: Phaser.Keyboard.P,
         pieceFreeze: Phaser.Keyboard.ENTER,
         pieceRotate: Phaser.Keyboard.UP,
         pieceLeft: Phaser.Keyboard.LEFT,
@@ -51,6 +52,7 @@ game.ControlSchemes =
         jump: Phaser.Keyboard.SPACEBAR,
         right: Phaser.Keyboard.D,
         left: Phaser.Keyboard.A,
+        pose: Phaser.Keyboard.W,
         pieceFreeze: Phaser.Keyboard.R,
         pieceRotate: Phaser.Keyboard.T,
         pieceLeft: Phaser.Keyboard.F,
@@ -62,6 +64,7 @@ game.ControlSchemes =
         jump: Phaser.Keyboard.UP,
         right: Phaser.Keyboard.RIGHT,
         left: Phaser.Keyboard.LEFT,
+        pose: Phaser.Keyboard.P,
         pieceFreeze: Phaser.Keyboard.U,
         pieceRotate: Phaser.Keyboard.I,
         pieceLeft: Phaser.Keyboard.J,
@@ -76,7 +79,8 @@ game.AnimationCodes = {
     Idle: 1,
     Run: 2,
     Jump: 3,
-    Wallgrab: 4
+    Wallgrab: 4,
+    Pose: 5
 }
 
 
@@ -104,6 +108,7 @@ game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGr
     player.animations.add("idle", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 9, 8, 9, 8], 4, true);
     player.animations.add("jump", [6], 1, true);
     player.animations.add("grabWall", [7], 1, true);
+    player.animations.add("pose", [10], 1, true);
 
     player.animationCode = game.AnimationCodes.Idle;
 
@@ -157,12 +162,14 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
     var rightInput = false;
     var leftInput = false;
     var jumpKey = false;
+    var poseKey = false;
 
     if (gameState == GameStates.GameInProgress)
     {
         rightInput = game.input.keyboard.isDown(player.controlScheme.right);
         leftInput = game.input.keyboard.isDown(player.controlScheme.left);
         jumpKey = game.input.keyboard.isDown(player.controlScheme.jump);
+        poseKey = game.input.keyboard.isDown(player.controlScheme.pose);
     }
     
     //Check if we will allow jump input 
@@ -229,6 +236,11 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
             player.body.velocity.x = 0;
         }
     }
+    
+    //Pose
+    if(poseKey){
+        player.animationCode = game.AnimationCodes.Pose;
+    }
 
     //Jumping
     if (jumpInputIsAllowed && jumpKey)
@@ -255,6 +267,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
         player.liftedJumpKey = false;
     }
 
+    
     //Gravity
     player.body.velocity.y += game.gravityStrength;
 
@@ -265,7 +278,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
         {
             player.animationCode = game.AnimationCodes.Idle;
         }
-        else
+        else 
         {
             player.animationCode = pushDirection * game.AnimationCodes.Run;
         }
@@ -279,6 +292,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
         else 
         player.animationCode = game.AnimationCodes.Jump;
     }
+    
 }
 
 game.updatePlayerAnimation = function(player)
@@ -300,6 +314,9 @@ game.updatePlayerAnimation = function(player)
         case game.AnimationCodes.Wallgrab:
             player.scale.x = Math.abs(player.scale.x) * sign;
             player.animations.play("grabWall");
+            break;
+        case game.AnimationCodes.Pose:
+            player.animations.play("pose");
             break;
     }
 }
