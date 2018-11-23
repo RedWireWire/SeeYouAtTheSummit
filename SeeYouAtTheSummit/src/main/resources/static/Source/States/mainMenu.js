@@ -53,7 +53,8 @@ mainMenuState.prototype = {
     },
 
     create: function() {
-        
+        firstMenu = false;
+        secondMenu = false;
         //Use for sorting
         this.group = game.add.group();
 

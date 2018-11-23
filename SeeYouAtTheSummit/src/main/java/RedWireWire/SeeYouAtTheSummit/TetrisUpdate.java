@@ -3,7 +3,7 @@ package RedWireWire.SeeYouAtTheSummit;
 public class TetrisUpdate {
 
 	public int playerId;
-	public int timeStamp;
+	public float timeStamp;
 	
 	public String actionCode;
 	

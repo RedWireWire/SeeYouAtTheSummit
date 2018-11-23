@@ -43,7 +43,7 @@ game.nextPiece = function(playerNumber, state, controlScheme, savingFunction, mu
     y -= game.pieceSpawnScreenBottomMarginInCubes * game.scaledCubeSize;
 
 
-    game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme, savingFunction, mustBeSentToServer);
+    game.createPiece(game.randomPieceShape(), x, y, playerNumber, state.piecePhysicsGroup, controlScheme, savingFunction, mustBeSentToServer, singlePlayer);
 }
 
 //Null controlScheme means it's online controlled

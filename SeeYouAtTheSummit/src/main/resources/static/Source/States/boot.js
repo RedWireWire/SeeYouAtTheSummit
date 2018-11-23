@@ -2,11 +2,19 @@ var bootState = function(game) {
 
 }
 
+var debugMode = false;
+
 bootState.prototype = {
 
     preload: function() {
         game.loadLoadingScreen();
         
+        if (debugMode)
+        {
+            game.autoDescendTime = 800000;
+            game.cameraAutoScrollSpeed = 0;
+        }
+
         //Configura phaser
         game.stage.disableVisibilityChange = true;
 

@@ -87,14 +87,6 @@ singlePlayerState.prototype = {
         }
     },
 
-    render: function()
-    {
-        for (i = 0; i < 4; i++)
-        {
-            game.debug.body(this.player1Piece.bricks[i]);
-        }
-    },
-
     //TMP
     updateScore: function()
     {
@@ -151,7 +143,7 @@ singlePlayerState.prototype = {
         {
             this.currentGameState = GameStates.PlayerLost;
             this.loserPlayer = this.player1;
-            this.announceGameEnd();
+            game.announce("That one's completely on you.")
         }
     },
 

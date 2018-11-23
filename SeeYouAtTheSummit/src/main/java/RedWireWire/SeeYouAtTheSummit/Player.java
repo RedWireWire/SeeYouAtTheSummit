@@ -67,7 +67,7 @@ public class Player {
 	
 	private void SortTetrisUpdates()
 	{
-		tetrisUpdates.sort((o1, o2) -> Integer.compare(o1.timeStamp,  o2.timeStamp));
+		tetrisUpdates.sort((o1, o2) -> Float.compare(o1.timeStamp,  o2.timeStamp));
 	}
 	
 	private void OutputTetrisUpdates()

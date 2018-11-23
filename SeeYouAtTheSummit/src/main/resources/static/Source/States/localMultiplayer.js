@@ -57,7 +57,8 @@ localMultiplayerState.prototype = {
     },
 
     update: function() {
-        
+
+
         //Collisions
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
