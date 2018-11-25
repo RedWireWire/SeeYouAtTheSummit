@@ -17,6 +17,17 @@ game.cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
 game.numberOfBackgrounds = 5;
 game.backgroundParallaxFactor = 0.3;
 
+
+game.GameStates = {
+    PreGame : 0,
+    GameInProgress : 1,
+    PlayerLost : 2,
+    PlayerWon : 3,
+    Draw : 4,
+    WaitingForRematch : 5,
+    Abandoned : 6
+};
+
 //Loading
 game.loadLoadingScreen = function()
 {
@@ -53,9 +64,6 @@ game.loadBackgroundTraining = function () {
         game.load.image("background", "Assets/EscenarioYFondos/FondoEntrenamiento.png");
 }
 
-
-
-
 //Initialization
 game.initializePhysicsGroups = function(state)
 {
@@ -76,7 +84,7 @@ game.initializeBrickSystem = function(state)
     state.brickPositions = brickSystem;
 }
 
-game.initializeBackgroundTraining = function () {
+game.initializeTrainingBackground = function () {
 
     //Load background
     var background = game.add.sprite(0, 0, "background");

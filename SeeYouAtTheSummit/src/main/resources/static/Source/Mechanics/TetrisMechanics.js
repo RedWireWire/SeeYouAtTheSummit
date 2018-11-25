@@ -536,11 +536,14 @@ game.cargarPiece = function(piezaRotar,indOriginal,originalX,originalY)
 }
 
 //Freezing
-game.freezePiece = function(piece, state)
+game.freezePiece = function(piece, state, forceFreeze = false)
 {
     //Comprueba si la pieza se puede detener en el sitio en el que esté.
-    if (!game.pieceIsAllowedToFreeze(piece, state)) return;
-
+    if (!forceFreeze)
+    {
+        if (!game.pieceIsAllowedToFreeze(piece, state)) return;
+    }
+    
     piece.frozen = true;
     for (let i = 0; i < 4; i++)
     {

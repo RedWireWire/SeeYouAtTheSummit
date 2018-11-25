@@ -107,8 +107,8 @@ game.createPlayer = function(playerNumber, xPosition, yPosition, playerPhysicsGr
     player.animations.add("walk", [1, 2, 3, 4, 5], 10, true);
     player.animations.add("idle", [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 9, 8, 9, 8], 4, true);
     player.animations.add("jump", [6], 1, true);
-    player.animations.add("grabWall", [7], 1, true);
     player.animations.add("pose", [10], 1, true);
+    player.animations.add("grabWall", [7], 1, true);
 
     player.animationCode = game.AnimationCodes.Idle;
 
@@ -164,7 +164,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
     var jumpKey = false;
     var poseKey = false;
 
-    if (gameState == GameStates.GameInProgress)
+    if (gameState == game.GameStates.GameInProgress || gameState == game.GameStates.PreGame)
     {
         rightInput = game.input.keyboard.isDown(player.controlScheme.right);
         leftInput = game.input.keyboard.isDown(player.controlScheme.left);
@@ -237,11 +237,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
         }
     }
     
-    //Pose
-    if(poseKey){
-        player.animationCode = game.AnimationCodes.Pose;
-    }
-
+    
     //Jumping
     if (jumpInputIsAllowed && jumpKey)
     {
@@ -274,9 +270,14 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
     //Set animation
     if (isGrounded)
     {
+        
         if (pushDirection == 0)
         {
             player.animationCode = game.AnimationCodes.Idle;
+            //Pose
+            if(poseKey){
+                player.animationCode = game.AnimationCodes.Pose;
+            }
         }
         else 
         {
@@ -298,6 +299,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
 game.updatePlayerAnimation = function(player)
 {
     var sign = Math.sign(player.animationCode);
+    player.isInAcceptance = false;
     switch (Math.abs(player.animationCode))
     {
         case game.AnimationCodes.Idle: 
@@ -317,6 +319,7 @@ game.updatePlayerAnimation = function(player)
             break;
         case game.AnimationCodes.Pose:
             player.animations.play("pose");
+            player.isInAcceptance = true;
             break;
     }
 }

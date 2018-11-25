@@ -2,12 +2,7 @@ var singlePlayerState = function(game) {
 
 }
 
-var GameStates = {
-    PreGame : 0,
-    GameInProgress : 1,
-    PlayerLost : 2,
-    Draw : 3
-};
+
 
 singlePlayerState.prototype = {
 
@@ -15,12 +10,12 @@ singlePlayerState.prototype = {
     {
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
 
         //Initialize a bunch of variables
         //Game state
-        this.currentGameState = GameStates.PreGame;
+        this.currentGameState = game.GameStates.PreGame;
         this.loserPlayer = null;
         this.winnerPlayer = null;
 
@@ -55,9 +50,9 @@ singlePlayerState.prototype = {
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
 
-        if (this.currentGameState == GameStates.PreGame)
+        if (this.currentGameState == game.GameStates.PreGame)
         {
-            this.currentGameState = GameStates.GameInProgress;
+            this.currentGameState = game.GameStates.GameInProgress;
         }
         else 
         {
@@ -67,7 +62,7 @@ singlePlayerState.prototype = {
             game.updatePlayerAnimation(this.player1);
 
             //Tetris input
-            if (this.currentGameState == GameStates.GameInProgress)
+            if (this.currentGameState == game.GameStates.GameInProgress)
             {
                 if (this.player1Piece) game.directPiece(this.player1Piece, this);
 
@@ -78,10 +73,10 @@ singlePlayerState.prototype = {
             game.updateCameraPosition(this, this.player1);
 
             //Gamestate control
-            if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
+            if (this.currentGameState == game.GameStates.GameInProgress) this.checkForGameEnd();
         }
 
-        if (this.currentGameState == GameStates.PlayerLost || this.currentGameState == GameStates.Draw)
+        if (this.currentGameState == game.GameStates.PlayerLost || this.currentGameState == game.GameStates.Draw)
         {
             this.checkForBackToMenu();
         }
@@ -110,15 +105,6 @@ singlePlayerState.prototype = {
                 error: function() { console.log("Error");}
             }
         );
-        
-        /*
-        var data = newScore;
-        $.post(path, 0, function()
-        {
-            console.log("Done, I think");
-        })
-        */
-
 
     },
 
@@ -141,7 +127,7 @@ singlePlayerState.prototype = {
         //Check if the game is over, and what the result is
         if (player1Lost) 
         {
-            this.currentGameState = GameStates.PlayerLost;
+            this.currentGameState = game.GameStates.PlayerLost;
             this.loserPlayer = this.player1;
             game.announce("That one's completely on you.")
         }
@@ -152,7 +138,7 @@ singlePlayerState.prototype = {
 
         var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
         var message = "";
-        if (this.currentGameState == GameStates.PlayerLost)
+        if (this.currentGameState == game.GameStates.PlayerLost)
         {
             message = "You lose.";
         }

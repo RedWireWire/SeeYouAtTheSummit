@@ -2,12 +2,7 @@ var trainingState = function(game) {
 
 }
 
-var GameStates = {
-    PreGame : 0,
-    GameInProgress : 1,
-    PlayerLost : 2,
-    Draw : 3
-};
+
 
 trainingState.prototype = {
 
@@ -15,12 +10,12 @@ trainingState.prototype = {
     {
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
         game.loadBackgroundTraining();
         //Initialize a bunch of variables
         //Game state
-        this.currentGameState = GameStates.PreGame;
+        this.currentGameState = game.GameStates.PreGame;
         this.loserPlayer = null;
         this.winnerPlayer = null;
 
@@ -32,7 +27,7 @@ trainingState.prototype = {
 
         game.setupLevel(this);
 
-        game.initializeBackgroundTraining(this);
+        game.initializeTrainingBackground(this);
 
         //Physics initialization
         game.initializePhysicsGroups(this);
@@ -56,9 +51,9 @@ trainingState.prototype = {
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
 
-        if (this.currentGameState == GameStates.PreGame)
+        if (this.currentGameState == game.GameStates.PreGame)
         {
-            this.currentGameState = GameStates.GameInProgress;
+            this.currentGameState = game.GameStates.GameInProgress;
         }
         else 
         {
@@ -68,7 +63,7 @@ trainingState.prototype = {
             game.updatePlayerAnimation(this.player1);
 
             //Tetris input
-            if (this.currentGameState == GameStates.GameInProgress)
+            if (this.currentGameState == game.GameStates.GameInProgress)
             {
                 if (this.player1Piece) game.directPiece(this.player1Piece, this);
 
@@ -76,10 +71,10 @@ trainingState.prototype = {
             }
 
             //Gamestate control
-            if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
+            if (this.currentGameState == game.GameStates.GameInProgress) this.checkForGameEnd();
         }
 
-        if (this.currentGameState == GameStates.PlayerLost || this.currentGameState == GameStates.Draw)
+        if (this.currentGameState == game.GameStates.PlayerLost || this.currentGameState == game.GameStates.Draw)
         {
             this.checkForBackToMenu();
         }
@@ -106,7 +101,7 @@ trainingState.prototype = {
         //Check if the game is over, and what the result is
         if (player1Lost) 
         {
-            this.currentGameState = GameStates.PlayerLost;
+            this.currentGameState = game.GameStates.PlayerLost;
             this.loserPlayer = this.player1;
             game.announce("That's why you're training.")
         }

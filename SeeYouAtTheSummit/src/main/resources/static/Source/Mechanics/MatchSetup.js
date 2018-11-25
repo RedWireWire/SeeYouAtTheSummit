@@ -17,6 +17,17 @@ game.cameraCatchupDistanceToSpeedIncreaseFactor = 0.05;
 game.numberOfBackgrounds = 5;
 game.backgroundParallaxFactor = 0.3;
 
+
+game.GameStates = {
+    PreGame : 0,
+    GameInProgress : 1,
+    PlayerLost : 2,
+    PlayerWon : 3,
+    Draw : 4,
+    WaitingForRematch : 5,
+    Abandoned : 6
+};
+
 //Loading
 game.loadLoadingScreen = function()
 {

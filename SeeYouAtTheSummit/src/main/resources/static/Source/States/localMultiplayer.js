@@ -2,12 +2,6 @@ var localMultiplayerState = function(game) {
 
 }
 
-var GameStates = {
-    PreGame : 0,
-    GameInProgress : 1,
-    PlayerLost : 2,
-    Draw : 3
-};
 
 localMultiplayerState.prototype = {
 
@@ -21,7 +15,7 @@ localMultiplayerState.prototype = {
 
         //Initialize a bunch of variables
         //Game state
-        this.currentGameState = GameStates.PreGame;
+        this.currentGameState = game.GameStates.PreGame;
         this.loserPlayer = null;
         this.winnerPlayer = null;
 
@@ -63,9 +57,9 @@ localMultiplayerState.prototype = {
         game.physics.arcade.collide(this.groundPhysicsGroup, this.playerPhysicsGroup);
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.playerPhysicsGroup);
 
-        if (this.currentGameState == GameStates.PreGame)
+        if (this.currentGameState == game.GameStates.PreGame)
         {
-            this.currentGameState = GameStates.GameInProgress;
+            this.currentGameState = game.GameStates.GameInProgress;
         }
         else 
         {
@@ -77,7 +71,7 @@ localMultiplayerState.prototype = {
             game.updatePlayerAnimation(this.player2);
 
             //Tetris input
-            if (this.currentGameState == GameStates.GameInProgress)
+            if (this.currentGameState == game.GameStates.GameInProgress)
             {
                 if (this.player1Piece) game.directPiece(this.player1Piece, this);
                 if (this.player2Piece) game.directPiece(this.player2Piece, this);    
@@ -89,10 +83,10 @@ localMultiplayerState.prototype = {
             game.updateCameraPosition(this, this.player1, this.player2);
 
             //Gamestate control
-            if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
+            if (this.currentGameState == game.GameStates.GameInProgress) this.checkForGameEnd();
         }
 
-        if (this.currentGameState == GameStates.PlayerLost || this.currentGameState == GameStates.Draw)
+        if (this.currentGameState == game.GameStates.PlayerLost || this.currentGameState == game.GameStates.Draw)
         {
             this.checkForBackToMenu();
         }
@@ -160,21 +154,21 @@ localMultiplayerState.prototype = {
         //Check if the game is over, and what the result is
         if (player1Lost && !player2Lost) 
         {
-            this.currentGameState = GameStates.PlayerLost;
+            this.currentGameState = game.GameStates.PlayerLost;
             this.winnerPlayer = this.player2;
             this.loserPlayer = this.player1;
             this.announceGameEnd();
         }
         else if (player2Lost && !player1Lost)
         {
-            this.currentGameState = GameStates.PlayerLost;
+            this.currentGameState = game.GameStates.PlayerLost;
             this.winnerPlayer = this.player1;
             this.loserPlayer = this.player2;
             this.announceGameEnd();
         }
         else if (player1Lost && player2Lost)
         {
-            this.currentGameState = GameStates.Draw;
+            this.currentGameState = game.GameStates.Draw;
             this.announceGameEnd();
         }
     },
@@ -184,11 +178,11 @@ localMultiplayerState.prototype = {
 
         var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
         var message = "";
-        if (this.currentGameState == GameStates.PlayerLost)
+        if (this.currentGameState == game.GameStates.PlayerLost)
         {
             message = this.winnerPlayer.name + " wins!";
         }
-        else if (this.currentGameState == GameStates.Draw)
+        else if (this.currentGameState == game.GameStates.Draw)
         {
             message = "Everybody loses.";
         }

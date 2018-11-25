@@ -6,16 +6,6 @@ var lastTimeStamp;
 
 onlineMultiplayerState.prototype = {
 
-    GameStates: {
-        PreGame : 0,
-        GameInProgress : 1,
-        PlayerWon : 2,
-        PlayerLost : 3,
-        Draw : 4,
-        WaitingForRematch: 5,
-        Abandoned: 6
-    },
-
     //Initialization
     preload: function() 
     {
@@ -31,7 +21,7 @@ onlineMultiplayerState.prototype = {
 
         //Initialize a bunch of variables
         //Game state
-        this.currentGameState = this.GameStates.PreGame;
+        this.currentGameState = game.GameStates.PreGame;
 
         game.initializeBrickSystem(this);
 
@@ -84,10 +74,6 @@ onlineMultiplayerState.prototype = {
         this.onlineSyncedPlayer.predictedSpeedPerFrame = null;
         
         this.initializeOpponentTetrisUpdateBuffer();
-
-        //Player piece
-        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
-            function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
     },
 
     update: function() {
@@ -100,16 +86,24 @@ onlineMultiplayerState.prototype = {
         game.physics.arcade.collide(this.frozenPiecesPhysicsGroup, this.controlledPlayer);
 
         //Pregame state
-        if (this.currentGameState == this.GameStates.PreGame)
+        if (this.currentGameState == game.GameStates.PreGame)
         {
-            this.isInAcceptance = true;
+            //Move player
+            game.reactToPlayerInput(this.controlledPlayer, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
+            game.updatePlayerAnimation(this.controlledPlayer);
+            
+            //Move opponent
+            this.serverUpdate(this.controlledPlayer);
+            this.updateOpponent(this.onlineSyncedPlayer);
+
+            //Check acceptance
             $.ajax(
                 "/acceptance/" + matchId,
                 {
                     method: "PUT",
                     data: JSON.stringify({
                         playerId: playerId,
-                        isInAcceptance: this.isInAcceptance
+                        isInAcceptance: this.controlledPlayer.isInAcceptance
                     }),
                     processData: false,
                     headers: {
@@ -122,7 +116,7 @@ onlineMultiplayerState.prototype = {
 
         }
         //Gameplay state
-        else if (this.currentGameState == this.GameStates.GameInProgress)
+        else if (this.currentGameState == game.GameStates.GameInProgress)
         {
             //Player movement
             game.reactToPlayerInput(this.controlledPlayer, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
@@ -145,15 +139,16 @@ onlineMultiplayerState.prototype = {
             this.checkForGameEnd(this.controlledPlayer, this.onlineSyncedPlayer);
         }
         //Game end
-        else if (this.currentGameState == this.GameStates.PlayerLost || this.currentGameState == this.GameStates.Draw || this.currentGameState == this.GameStates.PlayerWon)
+        else if (this.currentGameState == game.GameStates.PlayerLost || this.currentGameState == game.GameStates.Draw || this.currentGameState == game.GameStates.PlayerWon)
         {
             this.serverUpdate(this.controlledPlayer);
-            this.checkForBackToMenuOrRematch();
-            this.pollForRematch();
+            this.checkForBackToMenuOnly();
+            //this.checkForBackToMenuOrRematch();
+            //this.pollForRematch();
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
         }
         //Waiting for rematch
-        else if (this.currentGameState == this.GameStates.WaitingForRematch)
+        else if (this.currentGameState == game.GameStates.WaitingForRematch)
         {
             this.serverUpdate(this.controlledPlayer);
             this.checkForBackToMenuOnly();
@@ -161,7 +156,7 @@ onlineMultiplayerState.prototype = {
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
         }
         //Left alone
-        else if (this.currentGameState == this.GameStates.Abandoned)
+        else if (this.currentGameState == game.GameStates.Abandoned)
         {
             this.checkForBackToMenuOnly();
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
@@ -172,7 +167,10 @@ onlineMultiplayerState.prototype = {
     //State management
     startMatch: function()
     {
-        this.currentGameState = this.GameStates.GameInProgress;
+        this.currentGameState = game.GameStates.GameInProgress;
+        //Player piece
+        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
+            function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
     },
 
 
@@ -504,7 +502,7 @@ onlineMultiplayerState.prototype = {
 
                 case "FREEZE":
                     var state = game.state.getCurrentState();
-                    game.freezePiece(piece, state);
+                    game.freezePiece(piece, state, true);
                     break;
             }
         }
@@ -534,18 +532,18 @@ onlineMultiplayerState.prototype = {
         {
             if (onlinePlayer.isDead)
             {
-                this.currentGameState = this.GameStates.Draw;
+                this.currentGameState = game.GameStates.Draw;
                 game.announce("Everybody loses.");
             }
             else
             {
-                this.currentGameState = this.GameStates.PlayerLost;
+                this.currentGameState = game.GameStates.PlayerLost;
                 game.announce("Only you lose.");
             }
         }
         else if (onlinePlayer.isDead)
         {
-            this.currentGameState = this.GameStates.PlayerWon;
+            this.currentGameState = game.GameStates.PlayerWon;
             game.announce("Everybody but you loses.");
         }
     },
@@ -655,7 +653,7 @@ onlineMultiplayerState.prototype = {
 
     startAbandonedState: function()
     {
-        this.currentGameState = this.GameStates.Abandoned;
+        this.currentGameState = game.GameStates.Abandoned;
         game.announce("You were abandoned");
     }
 }

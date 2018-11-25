@@ -164,7 +164,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
     var jumpKey = false;
     var poseKey = false;
 
-    if (gameState == GameStates.GameInProgress)
+    if (gameState == game.GameStates.GameInProgress || gameState == game.GameStates.PreGame)
     {
         rightInput = game.input.keyboard.isDown(player.controlScheme.right);
         leftInput = game.input.keyboard.isDown(player.controlScheme.left);
@@ -299,6 +299,7 @@ game.reactToPlayerInput = function(player, gameState, groundPhysicsGroup, frozen
 game.updatePlayerAnimation = function(player)
 {
     var sign = Math.sign(player.animationCode);
+    player.isInAcceptance = false;
     switch (Math.abs(player.animationCode))
     {
         case game.AnimationCodes.Idle: 
@@ -318,6 +319,7 @@ game.updatePlayerAnimation = function(player)
             break;
         case game.AnimationCodes.Pose:
             player.animations.play("pose");
+            player.isInAcceptance = true;
             break;
     }
 }

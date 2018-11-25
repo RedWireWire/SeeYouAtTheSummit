@@ -81,7 +81,9 @@ public class PlayerController {
 		//Set the acceptance for the player, and return true if both are now in acceptance
 		Match match = matches[matchId];
 		match.GetPlayerById(player.playerId).inAcceptance = player.isInAcceptance;
-		
+		if (match.BothAreInAcceptance()) {
+			System.out.println("yes");
+		}
 		return match.BothAreInAcceptance();
 	}
 	
