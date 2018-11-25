@@ -108,25 +108,9 @@ trainingState.prototype = {
         {
             this.currentGameState = GameStates.PlayerLost;
             this.loserPlayer = this.player1;
-            this.announceGameEnd();
+            game.announce("That's why you're training.")
         }
     },
-
-    announceGameEnd: function()
-    {
-
-        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
-        var message = "";
-        if (this.currentGameState == GameStates.PlayerLost)
-        {
-            message = "You lose.";
-        }
-        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
-        console.log(message);
-        announcementText.fixedToCamera = true;
-        this.getCurrentScore();
-    },
-
 
     getCurrentScore: function()
     {

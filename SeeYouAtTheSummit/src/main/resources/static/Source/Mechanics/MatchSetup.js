@@ -246,7 +246,10 @@ game.announce = function(message)
     var style = { font: "65px Arial", fill: "#DF4BB3", align: "right" };
 
     //Show it
-    game.announcementText = game.add.text(gameWidth / 2 - 100, gameHeight / 2, message, style);
+    game.announcementText = game.add.text(gameWidth / 2 - 150, gameHeight / 2, message, style);
+    game.announcementText.anchor.setTo(1, 0.5);
+    game.announcementText.x = gameWidth - 25;
+    game.announcementText.y = gameHeight / 2 + 75;
     console.log(message);
     game.announcementText.fixedToCamera = true;
 }

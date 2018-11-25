@@ -93,7 +93,20 @@ public class PlayerController {
 		int playerId = receivedUpdate.playerId;
 		
 		//Process the update
-		match.GetPlayerById(playerId).lastUpdate = receivedUpdate;
+		Player player = match.GetPlayerById(playerId);
+		if (player.lastUpdate == null)
+		{
+			player.lastUpdate = receivedUpdate;
+		}
+		else
+		{
+			float previousUpdateTime = player.lastUpdate.timeStamp;
+			if (receivedUpdate.timeStamp > previousUpdateTime)
+			{
+				player.lastUpdate = receivedUpdate;
+			}
+		}
+		
 		
 		Player otherPlayer = match.GetOtherPlayerById(playerId);
 		if (otherPlayer == null)

@@ -15,10 +15,9 @@ trainingState.prototype = {
     {
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
-        game.load.image("background", "Assets/EscenarioYFondos/FondoEntrenamiento.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
-
+        game.loadBackgroundTraining();
         //Initialize a bunch of variables
         //Game state
         this.currentGameState = GameStates.PreGame;
@@ -29,13 +28,15 @@ trainingState.prototype = {
 
     },    
 
-    create: function() {
+    create: function () {
+
         game.setupLevel(this);
+
+        game.initializeBackgroundTraining(this);
 
         //Physics initialization
         game.initializePhysicsGroups(this);
 
-        
         //Create the ground
         game.createGround(this);
 
@@ -43,28 +44,10 @@ trainingState.prototype = {
         var screenCenterX = gameWidth / 2;
         this.player1 = game.createPlayer(1, screenCenterX , this.ground.y - 100, this.playerPhysicsGroup, true, game.ControlSchemes.NotShared);
 
+        game.camera.y = game.camera.y - 250;
         //Player pieces
         game.nextPiece(1, this, this.player1.controlScheme, 
             function(state, piece) { state.player1Piece = piece;}, false, true);
-    },
-
-    createBackground: function()
-    {
-        var background = game.add.image(game.world.centerX, game.world.centerY, "background");
-        
-        //Placement
-        background.anchor.x = 0;
-        background.anchor.y = 1;
-        background.x = 0;
-        background.y = gameHeight;
-        background.renderOrder = 0;
-        
-        //Scaling
-        var aspectRatio = background.height / background.width;
-        background.width = gameWidth;
-        background.height = gameWidth * aspectRatio;
-
-        return background;
     },
 
     update: function() {
@@ -91,7 +74,7 @@ trainingState.prototype = {
 
                 //this.updateScore();
             }
-            
+
             //Gamestate control
             if (this.currentGameState == GameStates.GameInProgress) this.checkForGameEnd();
         }
@@ -125,25 +108,9 @@ trainingState.prototype = {
         {
             this.currentGameState = GameStates.PlayerLost;
             this.loserPlayer = this.player1;
-            this.announceGameEnd();
+            game.announce("That's why you're training.")
         }
     },
-
-    announceGameEnd: function()
-    {
-
-        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
-        var message = "";
-        if (this.currentGameState == GameStates.PlayerLost)
-        {
-            message = "You lose.";
-        }
-        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
-        console.log(message);
-        announcementText.fixedToCamera = true;
-        this.getCurrentScore();
-    },
-
 
     getCurrentScore: function()
     {

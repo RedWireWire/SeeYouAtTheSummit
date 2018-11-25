@@ -49,6 +49,10 @@ game.loadBackgrounds = function()
     }
 }
 
+game.loadBackgroundTraining = function () {
+        game.load.image("background", "Assets/EscenarioYFondos/FondoEntrenamiento.png");
+}
+
 
 
 
@@ -70,6 +74,21 @@ game.initializeBrickSystem = function(state)
     }
 
     state.brickPositions = brickSystem;
+}
+
+game.initializeBackgroundTraining = function () {
+
+    //Load background
+    var background = game.add.sprite(0, 0, "background");
+    background.visible = true;
+    background.y = game.world.height - background.height/1.2;
+    //Scaling
+    background.anchor.x = 0;
+    background.anchor.y = 0;
+    var backgroundAspectRatio = background.height / background.width;
+    background.width = gameWidth;
+    background.height = gameWidth * backgroundAspectRatio;
+    
 }
 
 game.initializeBackgrounds = function(state)
@@ -227,7 +246,10 @@ game.announce = function(message)
     var style = { font: "65px Arial", fill: "#DF4BB3", align: "right" };
 
     //Show it
-    game.announcementText = game.add.text(gameWidth / 2 - 100, gameHeight / 2, message, style);
+    game.announcementText = game.add.text(gameWidth / 2 - 150, gameHeight / 2, message, style);
+    game.announcementText.anchor.setTo(1, 0.5);
+    game.announcementText.x = gameWidth - 25;
+    game.announcementText.y = gameHeight / 2 + 75;
     console.log(message);
     game.announcementText.fixedToCamera = true;
 }
