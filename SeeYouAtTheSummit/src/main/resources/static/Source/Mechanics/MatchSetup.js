@@ -53,9 +53,6 @@ game.loadBackgroundTraining = function () {
         game.load.image("background", "Assets/EscenarioYFondos/FondoEntrenamiento.png");
 }
 
-
-
-
 //Initialization
 game.initializePhysicsGroups = function(state)
 {
@@ -76,7 +73,7 @@ game.initializeBrickSystem = function(state)
     state.brickPositions = brickSystem;
 }
 
-game.initializeBackgroundTraining = function () {
+game.initializeTrainingBackground = function () {
 
     //Load background
     var background = game.add.sprite(0, 0, "background");

@@ -15,7 +15,7 @@ trainingState.prototype = {
     {
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
-        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 10);
+        game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
         game.loadBackgroundTraining();
         //Initialize a bunch of variables
@@ -32,7 +32,7 @@ trainingState.prototype = {
 
         game.setupLevel(this);
 
-        game.initializeBackgroundTraining(this);
+        game.initializeTrainingBackground(this);
 
         //Physics initialization
         game.initializePhysicsGroups(this);
