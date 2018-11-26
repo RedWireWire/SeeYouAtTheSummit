@@ -484,25 +484,25 @@ onlineMultiplayerState.prototype = {
                     break;
 
                 case "ROTATE":
-                    game.rotatePiece(piece);
+                	if (piece) game.rotatePiece(piece);
                     break;
 
                 case "RIGHT":
-                    game.movePiece(piece, 1);
+                	if (piece) game.movePiece(piece, 1);
                     break;
 
                 case "LEFT":
-                    game.movePiece(piece, -1);
+                	if (piece) game.movePiece(piece, -1);
                     break;
                 
                 case "DOWN":
                     var state = game.state.getCurrentState();
-                    game.lowerPiece(piece, state);
+                    if (piece) game.lowerPiece(piece, state);
                     break;
 
                 case "FREEZE":
                     var state = game.state.getCurrentState();
-                    game.freezePiece(piece, state, true);
+                    if (piece) game.freezePiece(piece, state, true);
                     break;
             }
         }

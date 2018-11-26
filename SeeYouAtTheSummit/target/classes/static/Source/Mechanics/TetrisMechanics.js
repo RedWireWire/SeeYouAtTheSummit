@@ -263,6 +263,10 @@ game.movePiece = function(piece, direction)
 {
     for (let i = 0; i < 4; i++)
     {
+    	if (!piece || !piece.bricks || !piece.bricks[i] || !piece.bricks[i].body)
+		{
+    		console.log("mal");
+		}
         piece.bricks[i].body.x += direction * game.scaledCubeSize;
     }
 }
@@ -621,6 +625,10 @@ game.getGridCoordinates = function(xPosition, yPosition)
 game.saveBrick = function(brick, x, y, brickPositions)
 {
     game.resizeBrickArrayIfNeeded(x, y, brickPositions);
+    if (!brick || brickPositions.length <= x || brickPositions[x].length <= y)
+	{
+    	console.log("asdf");
+	}
     brickPositions[x][y] = brick;
 }
 

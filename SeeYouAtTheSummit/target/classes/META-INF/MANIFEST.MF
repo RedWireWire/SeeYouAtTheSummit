@@ -1,9 +1,9 @@
 Manifest-Version: 1.0
-Built-By: aitor
-Build-Jdk: 10.0.2
 Implementation-Title: SeeYouAtTheSummit
 Implementation-Version: 0.0.1-SNAPSHOT
+Built-By: Nautilus
 Implementation-Vendor-Id: RedWireWire
+Build-Jdk: 1.8.0_192
 Implementation-URL: http://maven.apache.org
 Created-By: Maven Integration for Eclipse
 
