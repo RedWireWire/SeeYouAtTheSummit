@@ -2,16 +2,15 @@ var matchMakingState = function(game) {
 
 }
 
-var matchId;
+var webSocketSession = null;
+
 var playerId;
 
 matchMakingState.prototype = {
 
-    //Enables some skipping functionality for testing
-    allowShortcuts: false,
-
     preload: function() {
         this.registered = false;
+        webSocketSession = null;
     },
 
     create: function() {
@@ -20,91 +19,38 @@ matchMakingState.prototype = {
         this.attemptToJoinMatch();
     },
 
-    //TMP
-    
-    update: function() {
-        if (this.allowShortcuts)
-        {
-            if (game.input.keyboard.isDown(Phaser.Keyboard.ZERO) && this.beenUp)
-            {
-                this.attemptToJoinMatch();
-                this.beenUp = false;
-            }
-            if (!game.input.keyboard.isDown(Phaser.Keyboard.ZERO))
-            {
-                this.beenUp = true;
-            }
-            if (game.input.keyboard.isDown(Phaser.Keyboard.ONE))
-            {
-                //controlledPlayerNumber = 1;
-                game.state.start("onlineMultiplayerState");
-            }
-            else if (game.input.keyboard.isDown(Phaser.Keyboard.TWO))
-            {
-                controlledPlayerNumber = 2;
-                game.state.start("onlineMultiplayerState");
-            }
-            else if (game.input.keyboard.isDown(Phaser.Keyboard.THREE))
-            {
-                game.state.start("localMultiplayerState");
-            }
-        }
-        
-        if (this.registered)
-        {
-            this.pollMatchFullness(matchId)
-        }
-    },
-
-    //Menu
-    beenUp: true,
-    showMatchMakingShortcuts: function()
-    {
-        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
-        var message = "0 to join server. \n1 for player 1.\n 2 for player 2.\n 3 for local.";
-
-        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
-        console.log(message);
-    },
-
-
-    //AJAX requests
+    //Creates a websocket to the server and registers the player if successful.
     attemptToJoinMatch: function()
     {
-        $.ajax(
-            "/match",
-            {
-                method: "POST",
-                
-                success: this.registerMatchId,
-            }
-        )
+        var url = new URL('/websocket', window.location.href);
+        url.protocol = url.protocol.replace('http', 'ws');
+
+        var path = url.href;
+
+
+        webSocketSession = new WebSocket(path);
+
+        webSocketSession.onerror = function(e) {
+            console.log("WS error: " + e);
+        }
+
+        webSocketSession.onopen = function(e)
+        {
+            webSocketSession.onmessage = game.state.getCurrentState().processWebSocketMessage;
+        }
+
+        webSocketSession.onclose = function() {
+            console.log("Closing socket");
+            game.state.start("mainMenuState");
+
+            webSocketSession = null;
+	    }
     },
 
+    //TODO: close the websocket instead
     leaveMatch: function()
     {   
-        $.ajax(
-            "/match",
-            {
-                method: "DELETE",
-                data: {
-                    matchId: matchId,
-                    playerId: playerId
-                },
-                success: this.unregisterFromMatch
-            }
-        )
-    },
-
-    pollMatchFullness: function(matchId)
-    {
-        $.ajax(
-            "/match/" + matchId,
-            {
-                method: "GET",
-                success: function(matchIsFull) { if (matchIsFull) matchMakingState.prototype.goToGameplay();}
-            }
-        )
+        webSocketSession.close();
     },
 
     goToGameplay: function()
@@ -112,28 +58,17 @@ matchMakingState.prototype = {
         game.state.start("onlineMultiplayerState");
     },
 
-    //Registration callbacks
-    registerMatchId: function(result)
+    processWebSocketMessage: function(msg)
     {
-        if (result.matchId != -1 && result.playerId != -1)
+        var parsedMessage = JSON.parse(msg.data);
+
+        switch(parsedMessage.operationCode)
         {
-            matchId = result.matchId;
-            playerId = result.playerId;
+            case "LOAD_MATCH":
+                playerId = parsedMessage.playerId;
+                game.state.getCurrentState().goToGameplay();
+                break;
         }
-        
-        console.log("Match: " + matchId + " Player: " + playerId);
-
-        game.state.getCurrentState().registered = true;
-    },
-
-    unregisterFromMatch: function()
-    {
-        navigator.sendBeacon("unregister", 
-            JSON.stringify({
-                matchId: matchId,
-                playerId: playerId
-            })
-        );
     }
 
     

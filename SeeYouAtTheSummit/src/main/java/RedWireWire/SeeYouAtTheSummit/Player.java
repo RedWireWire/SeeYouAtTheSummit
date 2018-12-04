@@ -1,9 +1,14 @@
 package RedWireWire.SeeYouAtTheSummit;
 
 import java.util.*;
+import org.springframework.web.socket.WebSocketSession;
+
 
 public class Player {
 
+	public WebSocketSession webSocketSession;
+	
+	public MatchRegisterResult matchRegistration;	
 	public boolean inAcceptance = false;
 	
 	public boolean wantsRematch = false;

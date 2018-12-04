@@ -2,7 +2,6 @@ package RedWireWire.SeeYouAtTheSummit;
 
 public class PlayerUpdate {
 
-	public int playerId;
 	public float x;
 	public float y;
 	public int animationCode;
