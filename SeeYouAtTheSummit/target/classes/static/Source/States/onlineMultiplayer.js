@@ -2,7 +2,8 @@ var onlineMultiplayerState = function(game) {
 
 }
 
-var lastTimeStamp;
+var doMovementPrediction = true;
+var predictedMomentumFactor = 0.6;
 
 onlineMultiplayerState.prototype = {
 
@@ -10,6 +11,8 @@ onlineMultiplayerState.prototype = {
     preload: function() 
     {
         game.startLoadingScreen();
+
+        webSocketSession.onmessage = this.processWebSocketMessage;
 
         this.isInAcceptance = false;
         this.controlledPlayerNumber = playerId;
@@ -93,26 +96,11 @@ onlineMultiplayerState.prototype = {
             game.updatePlayerAnimation(this.controlledPlayer);
             
             //Move opponent
-            this.serverUpdate(this.controlledPlayer);
+            this.sendPlayerUpdate(this.controlledPlayer);
             this.updateOpponent(this.onlineSyncedPlayer);
 
             //Check acceptance
-            $.ajax(
-                "/acceptance/" + matchId,
-                {
-                    method: "PUT",
-                    data: JSON.stringify({
-                        playerId: playerId,
-                        isInAcceptance: this.controlledPlayer.isInAcceptance
-                    }),
-                    processData: false,
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-
-                    success: function(goTime) { if (goTime) game.state.getCurrentState().startMatch();}
-                }
-            )
+            this.sendAcceptance(this.controlledPlayer.isInAcceptance);
 
         }
         //Gameplay state
@@ -126,10 +114,10 @@ onlineMultiplayerState.prototype = {
             if (this.controlledPiece) game.directPiece(this.controlledPiece, this);            
         
             //Server syncing.
-            this.serverUpdate(this.controlledPlayer);
+            this.sendPlayerUpdate(this.controlledPlayer);
             this.updateOpponent(this.onlineSyncedPlayer);
-            this.pollOpponentTetrisAction();
-            this.processOpponentTetrisUpdates(this.opponentTetrisUpdateBuffer);
+            //this.pollOpponentTetrisAction();
+            //this.processOpponentTetrisUpdates(this.opponentTetrisUpdateBuffer);
 
             //Camera control
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
@@ -141,7 +129,7 @@ onlineMultiplayerState.prototype = {
         //Game end
         else if (this.currentGameState == game.GameStates.PlayerLost || this.currentGameState == game.GameStates.Draw || this.currentGameState == game.GameStates.PlayerWon)
         {
-            this.serverUpdate(this.controlledPlayer);
+            this.sendPlayerUpdate(this.controlledPlayer);
             this.checkForBackToMenuOnly();
             //this.checkForBackToMenuOrRematch();
             //this.pollForRematch();
@@ -150,7 +138,7 @@ onlineMultiplayerState.prototype = {
         //Waiting for rematch
         else if (this.currentGameState == game.GameStates.WaitingForRematch)
         {
-            this.serverUpdate(this.controlledPlayer);
+            this.sendPlayerUpdate(this.controlledPlayer);
             this.checkForBackToMenuOnly();
             this.pollForRematch();
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
@@ -211,37 +199,51 @@ onlineMultiplayerState.prototype = {
 
 
 
-    //Server operations
-    serverUpdate: function(player)
+    
+
+    //Web socket send operations
+    sendAcceptance: function(isInAcceptance)
     {
-        if (lastTimeStamp && lastTimeStamp == this.timeStamp)
-        {
-            console.log("oops");
-        }
-        lastTimeStamp = this.timeStamp;
-        var object = {
-            playerId: player.playerId,
+        if (webSocketSession.readyState != 1) return;
+        var payload = {
+            operationCode: "ACCEPTANCE",
+            
+            isInAcceptance: isInAcceptance
+        };
+
+        webSocketSession.send(JSON.stringify(payload));
+    },
+
+    sendPlayerUpdate: function(player)
+    {
+        if (webSocketSession.readyState != 1) return;
+        var payload = {
+            operationCode: "PLAYER_UPDATE",
+
             x: player.x,
             y: player.y,
             animationCode: player.animationCode,
             isDead: player.isDead,
             timeStamp: this.timeStamp
+        };
+
+        webSocketSession.send(JSON.stringify(payload));
+    },
+
+    //Web socket recieve operations
+    processWebSocketMessage: function(message)
+    {
+        var parsedMessage = JSON.parse(message.data);
+        var state = game.state.getCurrentState();
+        switch(parsedMessage.operationCode)
+        {
+            case "START_MATCH":
+                state.startMatch();
+                break;
+            case "OPPONENT_UPDATE":
+            if (state.onlineSyncedPlayer != null) state.saveOpponentUpdate(parsedMessage);
+            break;
         }
-
-        $.ajax(
-            "/playerupdate/" + matchId,
-            {
-                method: "PUT",
-                data: JSON.stringify(object),
-                processData: false,
-
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                success: this.saveOpponentUpdate
-            }
-        )
     },
 
     saveOpponentUpdate: function(update)
@@ -249,35 +251,48 @@ onlineMultiplayerState.prototype = {
         var opponent = game.state.getCurrentState().onlineSyncedPlayer;
 
         //Save the update if it's more recent than what we already have
-        if ((opponent.lastUpdate && opponent.lastUpdate.timeStamp >= update.timeStamp) ||
-        (opponent.previousUpdate && opponent.previousUpdate.timeStamp >= update.timeStamp))
+        if ((opponent.lastUpdate != null && opponent.lastUpdate.timeStamp >= update.timeStamp) ||
+        (opponent.previousUpdate != null && opponent.previousUpdate.timeStamp >= update.timeStamp))
         {
+            console.log("Bad timeStamp");
             return;
         }
 
         opponent.previousUpdate = opponent.lastUpdate;
         opponent.lastUpdate = update;
 
-        //Predict the speed, provided we have two updates.
-        if (!opponent.lastUpdate || !opponent.previousUpdate) return;
-        var timeBetweenUpdates = opponent.lastUpdate.timeStamp - opponent.previousUpdate.timeStamp;
-        var movementVector = {
-            x: opponent.lastUpdate.x - opponent.previousUpdate.x,
-            y: opponent.lastUpdate.y - opponent.previousUpdate.y
+        if (doMovementPrediction)
+        {
+            //Predict the speed, provided we have two updates.
+            if (opponent.lastUpdate == null || opponent.previousUpdate == null) return;
+            var timeBetweenUpdates = opponent.lastUpdate.timeStamp - opponent.previousUpdate.timeStamp;
+            var movementVector = {
+                x: opponent.lastUpdate.x - opponent.previousUpdate.x,
+                y: opponent.lastUpdate.y - opponent.previousUpdate.y
+            }
+
+            var timePerFrame = (1 / game.time.desiredFps) * 1000;
+
+            movementVector.x = (movementVector.x / timeBetweenUpdates) * timePerFrame;
+            movementVector.y = (movementVector.y / timeBetweenUpdates) * timePerFrame;
+
+            opponent.predictedSpeedPerFrame = movementVector;
         }
-
-        var timePerFrame = (1 / game.time.desiredFps) * 1000;
-
-        movementVector.x = (movementVector.x / timeBetweenUpdates) * timePerFrame;
-        movementVector.y = (movementVector.y / timeBetweenUpdates) * timePerFrame;
-
-        opponent.predictedSpeedPerFrame = movementVector;
+        else
+        {
+            opponent.predictedSpeedPerFrame = {
+                x: 0,
+                y: 0
+            }
+        }
     },
 
+
+    //Processing of buffered received operations
     updateOpponent: function(opponent)
     {
         //There is an update we haven't processed yet
-        if (opponent.lastUpdate)
+        if (opponent.lastUpdate != null)
         {
             //Process it
             opponent.x = opponent.lastUpdate.x;
@@ -291,15 +306,33 @@ onlineMultiplayerState.prototype = {
             opponent.lastUpdate = null;
         }
         //There is no new update. Prediction time! (provided we have already predicted a speed)
-        else if (opponent.predictedSpeedPerFrame)
+        else if (opponent.predictedSpeedPerFrame != null)
         {
-            opponent.x += opponent.predictedSpeedPerFrame.x;
-            opponent.y += opponent.predictedSpeedPerFrame.y;
+            var resultingSpeedPerFrame = {
+                x: 0,
+                y: 0
+            }
+
+            if (opponent.lastPredictedSpeedPerFrame != null)
+            {
+                resultingSpeedPerFrame.x += predictedMomentumFactor * lastOpponentPredictedSpeedPerFrame.x;
+                resultingSpeedPerFrame.y += predictedMomentumFactor * lastOpponentPredictedSpeedPerFrame.y;
+            }
+
+            resultingSpeedPerFrame.x = (1 - predictedMomentumFactor) * opponent.predictedSpeedPerFrame.x;
+            resultingSpeedPerFrame.y = (1 - predictedMomentumFactor) * opponent.predictedSpeedPerFrame.y;
+            
+
+            opponent.x += resultingSpeedPerFrame.x;
+            opponent.y += resultingSpeedPerFrame.y;
+
+            opponent.lastPredictedSpeedPerFrame = opponent.resultingSpeedPerFrame;
         }
     },
 
     postTetrisCreate: function(piece)
     {
+        /*
         var tetrisUpdate = JSON.stringify({
             playerId: piece.playerNumber,
             timeStamp: this.timeStamp,
@@ -329,10 +362,12 @@ onlineMultiplayerState.prototype = {
                 }
             }
         )
+        */
     },
 
     postTetrisMove: function(piece, direction)
     {
+        /*
         //console.log("Sending " + direction);
 
         var path = "tetrisupdate/" + matchId;
@@ -366,10 +401,12 @@ onlineMultiplayerState.prototype = {
                 }
             }
         )
+        */
     },
 
     postTetrisRotate: function()
     {
+        /*
         var update = {
             playerId: this.controlledPlayer.playerNumber,
             timeStamp: this.timeStamp,
@@ -393,10 +430,12 @@ onlineMultiplayerState.prototype = {
                 }
             }
         )
+        */
     },
 
     postTetrisFreeze: function()
     {
+        /*
         var update = {
             playerId: this.controlledPlayer.playerNumber,
             timeStamp: this.timeStamp,
@@ -419,10 +458,12 @@ onlineMultiplayerState.prototype = {
                 }
             }
         )
+        */
     },
 
     pollOpponentTetrisAction: function()
     {
+        /*
         var sentData = JSON.stringify({ id: playerId});
         $.ajax(
             "/tetrisupdate/" + matchId,
@@ -438,6 +479,7 @@ onlineMultiplayerState.prototype = {
                 success: this.bufferOpponentTetrisUpdate
             }
         )
+        */
     },
 
     initializeOpponentTetrisUpdateBuffer: function(piece)

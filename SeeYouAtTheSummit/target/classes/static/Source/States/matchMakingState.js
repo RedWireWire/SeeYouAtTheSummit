@@ -4,6 +4,8 @@ var matchMakingState = function(game) {
 
 var webSocketSession = null;
 
+var playerId;
+
 matchMakingState.prototype = {
 
     preload: function() {
@@ -17,6 +19,7 @@ matchMakingState.prototype = {
         this.attemptToJoinMatch();
     },
 
+    //Creates a websocket to the server and registers the player if successful.
     attemptToJoinMatch: function()
     {
         var url = new URL('/websocket', window.location.href);
@@ -25,37 +28,29 @@ matchMakingState.prototype = {
         var path = url.href;
 
 
-        connection = new WebSocket(path);
+        webSocketSession = new WebSocket(path);
 
-        connection.onerror = function(e) {
+        webSocketSession.onerror = function(e) {
             console.log("WS error: " + e);
         }
 
-        connection.onopen = function(e)
+        webSocketSession.onopen = function(e)
         {
-            connection.onmessage = game.state.getCurrentState().processWebSocketMessage;
+            webSocketSession.onmessage = game.state.getCurrentState().processWebSocketMessage;
         }
 
-        connection.onclose = function() {
+        webSocketSession.onclose = function() {
             console.log("Closing socket");
             game.state.start("mainMenuState");
+
+            webSocketSession = null;
 	    }
     },
 
     //TODO: close the websocket instead
     leaveMatch: function()
     {   
-        $.ajax(
-            "/match",
-            {
-                method: "DELETE",
-                data: {
-                    matchId: matchId,
-                    playerId: playerId
-                },
-                success: this.unregisterFromMatch
-            }
-        )
+        webSocketSession.close();
     },
 
     goToGameplay: function()
@@ -69,7 +64,8 @@ matchMakingState.prototype = {
 
         switch(parsedMessage.operationCode)
         {
-            case "FULL":
+            case "LOAD_MATCH":
+                playerId = parsedMessage.playerId;
                 game.state.getCurrentState().goToGameplay();
                 break;
         }

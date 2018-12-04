@@ -33,7 +33,7 @@ public class PlayerController extends TextWebSocketHandler {
 	@Override
 	public void afterConnectionEstablished(WebSocketSession session) throws Exception
 	{
-		System.out.println("Established connection");
+		System.out.println("Established connection with " + session.getId());
 		Player newPlayer = RegisterPlayer();
 		if (newPlayer == null)
 		{
@@ -45,11 +45,11 @@ public class PlayerController extends TextWebSocketHandler {
 			//Save the player
 			players.put(session,  newPlayer);
 			newPlayer.webSocketSession = session;
-			NotifyPlayersIfMatchFilled(matches[newPlayer.matchRegistration.matchId]);
-
+			TellPlayersToLoadMatch(matches[newPlayer.matchRegistration.matchId]);
 		}
 	}
 	
+	//Unregisters the player that disconnected. Their opponent will be notified.
 	@Override
 	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception
 	{
@@ -60,24 +60,39 @@ public class PlayerController extends TextWebSocketHandler {
 		}
 	}
 	
+	//Receives and distributes the client's messages.
 	@Override 
 	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception
 	{
+		//Get the payload
 		JsonNode node = mapper.readTree(message.getPayload());
-		//At this point, we have received the message from the client, and we can use the session to identify the player.
 		
-		String operationCode = node.get("operation").asText();
+		//Get the player
+		Player player = players.get(session);
+		
+		//Get the code
+		String operationCode = node.get("operationCode").asText();
+		
+		//Distribute the message
 		switch (operationCode)
 		{
-		case "TEST1":
-			System.out.println("TEST1");
-			break;
-		case "TEST2":
-			System.out.println("TEST2");
-			break;
-		default:
-			System.out.println("DEFAULT");
-		}
+			case "ACCEPTANCE":
+				boolean isInAcceptance = node.get("isInAcceptance").asBoolean();
+				//System.out.println("Received ACCEPTANCE: " + Boolean.toString(isInAcceptance) + " from " + session.getId());
+				SetAcceptance(player, isInAcceptance);
+				break;
+			case "PLAYER_UPDATE":
+				//System.out.println("Received PLAYER_UPDATE from " + session.getId());
+				PlayerUpdate newUpdate = SetNewPlayerUpdate(player, node);
+				if (newUpdate != null)
+				{
+					SendOpponentPlayerUpdate(matches[player.matchRegistration.matchId].
+							GetOtherPlayerById(player.matchRegistration.playerId), newUpdate);
+				}	
+				break;
+			default:
+				System.out.println("DEFAULT");
+			}
 		
 	}
 	
@@ -156,66 +171,104 @@ public class PlayerController extends TextWebSocketHandler {
 		throw(new IndexOutOfBoundsException());
 	}
 	
-	private void NotifyPlayersIfMatchFilled(Match match) throws Exception
+	private void TellPlayersToLoadMatch(Match match) throws Exception
 	{
 		if (match.GetIsReady())
 		{
 			ObjectNode node = mapper.createObjectNode();
-			node.put("operationCode","FULL");
+			node.put("operationCode","LOAD_MATCH");
 			
-			
+			node.put("playerId", 1);			
 			TextMessage message = new TextMessage(node.toString());
 			match.GetPlayerById(1).webSocketSession.sendMessage(message);
+			
+			node.put("playerId", 2);
+			message = new TextMessage(node.toString());
 			match.GetPlayerById(2).webSocketSession.sendMessage(message);
 		}
 	}
 	
 
 
+	///////////////
+	//Match start//
+	///////////////
 	
-	//Match start
-	//@PutMapping(value = "/acceptance/{matchId}")
-	public boolean SetAcceptance(@PathVariable int matchId, @RequestBody PlayerAcceptance player)
+	//Sets a player as accepting. If we thery're both acccepting, they will both be notified.
+	private void SetAcceptance(Player player, boolean isInAcceptance) throws Exception
 	{
-		//Set the acceptance for the player, and return true if both are now in acceptance
-		Match match = matches[matchId];
-		match.GetPlayerById(player.playerId).inAcceptance = player.isInAcceptance;
-		if (match.BothAreInAcceptance()) {
-			System.out.println("yes");
-		}
-		return match.BothAreInAcceptance();
+		player.inAcceptance = isInAcceptance;
+		Match match = matches[player.matchRegistration.matchId];
+		NotifyPlayersIfBothAccept(match);
 	}
 	
-	//Gameplay
-	//@PutMapping(value = "/playerupdate/{matchId}")
-	public PlayerUpdate Update(@PathVariable int matchId, @RequestBody PlayerUpdate receivedUpdate)
+	//Sends an ACCEPTED message to both players. 
+	private void NotifyPlayersIfBothAccept(Match match) throws Exception
 	{
-		Match match = matches[matchId];
-		int playerId = receivedUpdate.playerId;
-		
-		//Process the update
-		Player player = match.GetPlayerById(playerId);
-		if (player.lastUpdate == null)
+		if (match.BothAreInAcceptance())
 		{
-			player.lastUpdate = receivedUpdate;
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode", "START_MATCH");
+			
+			TextMessage message = new TextMessage(node.toString());
+			
+			match.GetPlayerById(1).webSocketSession.sendMessage(message);
+			match.GetPlayerById(2).webSocketSession.sendMessage(message);
+		}
+	}
+	
+	////////////
+	//Gameplay//
+	////////////
+	//Sets a new last player update if it is more recent than the last. 
+	//Returns the new update, or null if it wasn't more recent.
+	private PlayerUpdate SetNewPlayerUpdate(Player player, JsonNode node) throws Exception
+	{
+		float newUpdateTimeStamp = node.get("timeStamp").floatValue();
+		
+		//Ensure that the new update is more recent
+		if (player != null && (player.lastUpdate == null || player.lastUpdate.timeStamp < newUpdateTimeStamp))
+		{
+			//Create the update
+			PlayerUpdate newUpdate = new PlayerUpdate();
+			newUpdate.x = node.get("x").floatValue();
+			newUpdate.y = node.get("y").floatValue();
+			newUpdate.animationCode = node.get("animationCode").asInt();
+			newUpdate.isDead = node.get("isDead").asBoolean();
+			newUpdate.timeStamp = newUpdateTimeStamp;
+			
+			//Set it
+			player.lastUpdate = newUpdate;
+			
+			return newUpdate;
 		}
 		else
 		{
-			float previousUpdateTime = player.lastUpdate.timeStamp;
-			if (receivedUpdate.timeStamp > previousUpdateTime)
-			{
-				player.lastUpdate = receivedUpdate;
-			}
+			return null;
 		}
-		
-		
-		Player otherPlayer = match.GetOtherPlayerById(playerId);
-		if (otherPlayer == null)
-		{
-			return new PlayerUpdate();
-		}
-		else return otherPlayer.lastUpdate;
 	}
+	
+	//Send a player update to the specified opponent
+	private void SendOpponentPlayerUpdate(Player opponent, PlayerUpdate update) throws Exception
+	{
+		if (opponent != null)
+		{
+			
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode", "OPPONENT_UPDATE");
+			node.put("x", update.x);
+			node.put("y", update.y);
+			node.put("animationCode", update.animationCode);
+			node.put("isDead", update.isDead);
+			node.put("timeStamp", update.timeStamp);
+			
+			TextMessage message = new TextMessage(node.toString());
+			opponent.webSocketSession.sendMessage(message);
+			//System.out.println("Sending update to " + opponent.webSocketSession.getId());
+		}
+	}
+	
+	
 	
 	//@PostMapping(value = "/tetrisupdate/{matchId}")
 	public void AddTetrisUpdate(@PathVariable int matchId, @RequestBody TetrisUpdate update)
