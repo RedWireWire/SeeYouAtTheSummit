@@ -6,8 +6,9 @@ var doMovementPrediction = true;
 var predictedMomentumFactor = 0.6;
 
 onlineMultiplayerState.prototype = {
-
-    //Initialization
+    //////////////////
+    //Initialization//
+    //////////////////
     preload: function() 
     {
         game.startLoadingScreen();
@@ -79,6 +80,22 @@ onlineMultiplayerState.prototype = {
         this.initializeOpponentTetrisUpdateBuffer();
     },
 
+    initializeOpponentTetrisUpdateBuffer: function(piece)
+    {
+        this.opponentTetrisUpdateBuffer = new Array();
+    },
+
+    ////////////
+    //Gameplay//
+    ////////////
+    startMatch: function()
+    {
+        this.currentGameState = game.GameStates.GameInProgress;
+        //Player piece
+        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
+            function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
+    },
+
     update: function() {
         
         this.timeStamp += game.time.physicsElapsedMS;
@@ -116,8 +133,7 @@ onlineMultiplayerState.prototype = {
             //Server syncing.
             this.sendPlayerUpdate(this.controlledPlayer);
             this.updateOpponent(this.onlineSyncedPlayer);
-            //this.pollOpponentTetrisAction();
-            //this.processOpponentTetrisUpdates(this.opponentTetrisUpdateBuffer);
+            this.processOpponentTetrisUpdates(this.opponentTetrisUpdateBuffer);
 
             //Camera control
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
@@ -150,19 +166,6 @@ onlineMultiplayerState.prototype = {
             game.updateCameraPosition(this, this.controlledPlayer, this.onlineSyncedPlayer);
         }
     },
-
-
-    //State management
-    startMatch: function()
-    {
-        this.currentGameState = game.GameStates.GameInProgress;
-        //Player piece
-        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
-            function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
-    },
-
-
-
 
     //TMP
     updateScore: function()
@@ -197,11 +200,9 @@ onlineMultiplayerState.prototype = {
 
     },
 
-
-
-    
-
-    //Web socket send operations
+    //////////////////////////////
+    //Web socket send operations//
+    //////////////////////////////
     sendAcceptance: function(isInAcceptance)
     {
         if (webSocketSession.readyState != 1) return;
@@ -230,7 +231,79 @@ onlineMultiplayerState.prototype = {
         webSocketSession.send(JSON.stringify(payload));
     },
 
-    //Web socket recieve operations
+    postTetrisCreate: function(piece)
+    {
+        if (webSocketSession.readyState != 1) return;
+
+        var tetrisUpdate = JSON.stringify({
+            operationCode: "TETRIS_UPDATE",
+            
+            timeStamp: this.timeStamp,
+            actionCode: "CREATE",
+
+            xPosition: piece.spawnX,
+            yPosition: piece.spawnY,
+            shape: piece.shape
+        });
+        
+        webSocketSession.send(tetrisUpdate);
+    },
+
+    postTetrisMove: function(piece, direction)
+    {
+        if (webSocketSession.readyState != 1) return;
+        
+        var sentData = JSON.stringify(
+            {
+                operationCode: "TETRIS_UPDATE",
+
+                timeStamp: this.timeStamp,
+                actionCode: direction,
+                xPosition: 0,
+                yPosition: 0,
+                shape: 0
+            }
+        )
+
+        webSocketSession.send(sentData);
+    },
+
+    postTetrisRotate: function()
+    {
+        if (webSocketSession.readyState != 1) return;
+        
+        var update = {
+            operationCode: "TETRIS_UPDATE",
+
+            timeStamp: this.timeStamp,
+            actionCode: "ROTATE",
+            xPosition: 0,
+            yPosition: 0,
+            shape: 0
+        };
+        webSocketSession.send(JSON.stringify(update));
+    },
+
+    postTetrisFreeze: function()
+    {
+        if (webSocketSession.readyState != 1) return;
+        
+        var update = {
+            operationCode: "TETRIS_UPDATE",
+
+            timeStamp: this.timeStamp,
+            actionCode: "FREEZE",
+            xPosition: 0,
+            yPosition: 0,
+            shape: 0
+        }
+
+        webSocketSession.send(JSON.stringify(update));
+    },
+
+    /////////////////////////////////
+    //Web socket recieve operations//
+    /////////////////////////////////
     processWebSocketMessage: function(message)
     {
         var parsedMessage = JSON.parse(message.data);
@@ -241,8 +314,14 @@ onlineMultiplayerState.prototype = {
                 state.startMatch();
                 break;
             case "OPPONENT_UPDATE":
-            if (state.onlineSyncedPlayer != null) state.saveOpponentUpdate(parsedMessage);
-            break;
+                if (state.onlineSyncedPlayer != null) 
+                {
+                    state.saveOpponentUpdate(parsedMessage);
+                }
+                break;
+            case "TETRIS_UPDATE":
+                state.bufferOpponentTetrisUpdate(parsedMessage);
+                break;
         }
     },
 
@@ -287,8 +366,24 @@ onlineMultiplayerState.prototype = {
         }
     },
 
+    bufferOpponentTetrisUpdate: function(update)
+    {
+        var buffer = game.state.getCurrentState().opponentTetrisUpdateBuffer;
 
-    //Processing of buffered received operations
+        buffer.push(update);
+        
+        //Comentado para mejorar la latencia. Si ocurren problemas de orden de comandos, esto puede descomentarse.
+        //Ordena los comandos en función de su timeStamp
+        /*
+        buffer.sort(function(a, b) {
+            return a.timeStamp - b.timeStamp;
+        })
+        */
+    },
+
+    //////////////////////////////////////////////
+    //Processing of buffered received operations//
+    //////////////////////////////////////////////
     updateOpponent: function(opponent)
     {
         //There is an update we haven't processed yet
@@ -330,178 +425,6 @@ onlineMultiplayerState.prototype = {
         }
     },
 
-    postTetrisCreate: function(piece)
-    {
-        /*
-        var tetrisUpdate = JSON.stringify({
-            playerId: piece.playerNumber,
-            timeStamp: this.timeStamp,
-            actionCode: "CREATE",
-
-            xPosition: piece.spawnX,
-            yPosition: piece.spawnY,
-            shape: piece.shape
-        });
-        var path = "/tetrisupdate/" + matchId;
-
-        //console.log("Sending CREATE");
-
-        $.ajax(
-            path,
-            {
-                method: "POST",
-                data: tetrisUpdate,
-                processData: false,
-                headers: {
-                    "Content-Type": "application/json"
-                },
-
-                //Retry if the server didn't recive the update.
-                error: function() {
-                    $.ajax(this);
-                }
-            }
-        )
-        */
-    },
-
-    postTetrisMove: function(piece, direction)
-    {
-        /*
-        //console.log("Sending " + direction);
-
-        var path = "tetrisupdate/" + matchId;
-        var sentData = JSON.stringify(
-            {
-                playerId: piece.playerNumber,
-                timeStamp: this.timeStamp,
-                actionCode: direction,
-                xPosition: 0,
-                yPosition: 0,
-                shape: 0
-            }
-        )
-
-        $.ajax(
-            path, 
-            {
-                method: "POST",
-                data: sentData,
-                //dataType: "json",
-                processData: false,
-                headers:
-                {
-                    "Content-Type": "application/json"
-                },
-                
-                //success: function(data) { console.log("Sent " + data.actionCode);},
-                error: function() {
-                    $.ajax(this);
-                    console.log("Retrying");
-                }
-            }
-        )
-        */
-    },
-
-    postTetrisRotate: function()
-    {
-        /*
-        var update = {
-            playerId: this.controlledPlayer.playerNumber,
-            timeStamp: this.timeStamp,
-            actionCode: "ROTATE"
-        }
-
-        //console.log("Sending ROTATE");
-
-        $.ajax(
-            "tetrisupdate/" + matchId,
-            {
-                method: "POST",
-                data: JSON.stringify(update),
-                processData: false,
-                headers:
-                {
-                    "Content-Type": "application/json"
-                },
-                error: function() {
-                    $.ajax(this);
-                }
-            }
-        )
-        */
-    },
-
-    postTetrisFreeze: function()
-    {
-        /*
-        var update = {
-            playerId: this.controlledPlayer.playerNumber,
-            timeStamp: this.timeStamp,
-            actionCode: "FREEZE"
-        }
-
-        //console.log("Sending FREEZE");
-        $.ajax(
-            "tetrisupdate/" + matchId,
-            {
-                method: "POST",
-                data: JSON.stringify(update),
-                processData: false,
-                headers:
-                {
-                    "Content-Type": "application/json"
-                },
-                error: function() {
-                    $.ajax(this);
-                }
-            }
-        )
-        */
-    },
-
-    pollOpponentTetrisAction: function()
-    {
-        /*
-        var sentData = JSON.stringify({ id: playerId});
-        $.ajax(
-            "/tetrisupdate/" + matchId,
-            {
-                method: "PUT",
-                data: sentData,
-                processData: false,
-                headers:
-                {
-                    "Content-Type": "application/json"
-                },
-
-                success: this.bufferOpponentTetrisUpdate
-            }
-        )
-        */
-    },
-
-    initializeOpponentTetrisUpdateBuffer: function(piece)
-    {
-        this.opponentTetrisUpdateBuffer = new Array();
-    },
-
-    bufferOpponentTetrisUpdate: function(update)
-    {
-        var buffer = game.state.getCurrentState().opponentTetrisUpdateBuffer;
-
-        buffer.push(update);
-        
-        //Comentado para mejorar la latencia. Si ocurren problemas de orden de comandos, esto puede descomentarse.
-        //Ordena los comandos en función de su timeStamp
-        /*
-        buffer.sort(function(a, b) {
-            return a.timeStamp - b.timeStamp;
-        })
-        */
-    },
-
     processOpponentTetrisUpdates: function(buffer)
     {
         var piece;
@@ -520,7 +443,7 @@ onlineMultiplayerState.prototype = {
                     break;
 
                 case "CREATE":
-                    game.createPiece(update.shape, update.xPosition, update.yPosition, update.playerId, 
+                    game.createPiece(update.shape, update.xPosition, update.yPosition, game.state.getCurrentState().onlineSyncedPlayer.playerNumber, 
                         game.state.getCurrentState().piecePhysicsGroup, null, 
                         function(state, piece) {state.onlineSyncedPiece = piece;}, false);
                     break;
@@ -550,6 +473,7 @@ onlineMultiplayerState.prototype = {
         }
         
     },
+
 
     //////////////
     //GAME STATE//
@@ -590,7 +514,9 @@ onlineMultiplayerState.prototype = {
         }
     },
 
-    //After the game
+    //////////////////
+    //After the game//
+    //////////////////
     checkForBackToMenuOrRematch: function()
     {
         if (game.input.keyboard.isDown(Phaser.Keyboard.ESC))
@@ -639,6 +565,7 @@ onlineMultiplayerState.prototype = {
 
     goBackToMainMenu: function()
     {
+        /*
         $.ajax(
             "/match",
             {
@@ -655,7 +582,7 @@ onlineMultiplayerState.prototype = {
                 }
             }
         );
-
+        */
         game.state.start("mainMenuState");
     },
 

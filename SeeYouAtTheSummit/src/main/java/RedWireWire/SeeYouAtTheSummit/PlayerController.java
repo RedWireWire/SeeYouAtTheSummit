@@ -90,8 +90,14 @@ public class PlayerController extends TextWebSocketHandler {
 							GetOtherPlayerById(player.matchRegistration.playerId), newUpdate);
 				}	
 				break;
+			case "TETRIS_UPDATE":
+				TetrisUpdate update = AddTetrisUpdate(player, node);
+				Player opponent = matches[player.matchRegistration.matchId].
+						GetOtherPlayerById(player.matchRegistration.playerId);
+				SendTetrisUpdate(opponent, update);
+				break;
 			default:
-				System.out.println("DEFAULT");
+				System.out.println(operationCode);
 			}
 		
 	}
@@ -180,11 +186,20 @@ public class PlayerController extends TextWebSocketHandler {
 			
 			node.put("playerId", 1);			
 			TextMessage message = new TextMessage(node.toString());
-			match.GetPlayerById(1).webSocketSession.sendMessage(message);
+			Player player = match.GetPlayerById(1);
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);;
+			}
+			
 			
 			node.put("playerId", 2);
 			message = new TextMessage(node.toString());
-			match.GetPlayerById(2).webSocketSession.sendMessage(message);
+			player = match.GetPlayerById(2);
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);;
+			}
 		}
 	}
 	
@@ -212,14 +227,24 @@ public class PlayerController extends TextWebSocketHandler {
 			
 			TextMessage message = new TextMessage(node.toString());
 			
-			match.GetPlayerById(1).webSocketSession.sendMessage(message);
-			match.GetPlayerById(2).webSocketSession.sendMessage(message);
+			Player player = match.GetPlayerById(1); 
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);
+			}
+			
+			player = match.GetPlayerById(2);
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);
+			}
 		}
 	}
 	
 	////////////
 	//Gameplay//
 	////////////
+	
 	//Sets a new last player update if it is more recent than the last. 
 	//Returns the new update, or null if it wasn't more recent.
 	private PlayerUpdate SetNewPlayerUpdate(Player player, JsonNode node) throws Exception
@@ -253,7 +278,6 @@ public class PlayerController extends TextWebSocketHandler {
 	{
 		if (opponent != null)
 		{
-			
 			ObjectNode node = mapper.createObjectNode();
 			node.put("operationCode", "OPPONENT_UPDATE");
 			node.put("x", update.x);
@@ -263,29 +287,63 @@ public class PlayerController extends TextWebSocketHandler {
 			node.put("timeStamp", update.timeStamp);
 			
 			TextMessage message = new TextMessage(node.toString());
-			opponent.webSocketSession.sendMessage(message);
+			synchronized (opponent.webSocketSession)
+			{
+				opponent.webSocketSession.sendMessage(message);
+			}
 			//System.out.println("Sending update to " + opponent.webSocketSession.getId());
 		}
 	}
 	
-	
-	
-	//@PostMapping(value = "/tetrisupdate/{matchId}")
-	public void AddTetrisUpdate(@PathVariable int matchId, @RequestBody TetrisUpdate update)
+	//Buffers a tetris update from the specified player
+	private TetrisUpdate AddTetrisUpdate(Player player, JsonNode node) 
+
 	{
-		int playerId = update.playerId;
-		Player player = matches[matchId].GetPlayerById(playerId);
-		player.EnterTetrisUpdate(update);
+		TetrisUpdate update = new TetrisUpdate();
+		update.timeStamp = node.get("timeStamp").floatValue();
+		update.actionCode = node.get("actionCode").asText();
+		update.xPosition = node.get("xPosition").asInt();
+		update.yPosition = node.get("yPosition").asInt();
+		update.shape = node.get("shape").asInt();
+				
+		//player.EnterTetrisUpdate(update);
+		return update;
 	}
 	
+	private void SendTetrisUpdate(Player opponent, TetrisUpdate update) throws Exception
+	{
+		if (opponent != null)
+		{
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode", "TETRIS_UPDATE");
+			node.put("actionCode", update.actionCode);
+			node.put("timeStamp", update.timeStamp);
+			node.put("xPosition", update.xPosition);
+			node.put("yPosition", update.yPosition);
+			node.put("shape", update.shape);
+			
+			TextMessage message = new TextMessage(node.toString());
+			synchronized (opponent.webSocketSession)
+			{
+				opponent.webSocketSession.sendMessage(message);
+			}
+			//System.out.println("Sending "+ update.actionCode +" to " + opponent.webSocketSession.getId());
+		}
+	}
+	
+	
+	/*
 	//@PutMapping(value = "/tetrisupdate/{matchId}")
 	public TetrisUpdate GetTetrisUpdate(@PathVariable int matchId, @RequestBody IDWrapper requestingPlayerId)
 	{
 		Player opponent = matches[matchId].GetOtherPlayerById((requestingPlayerId.id));
 		return opponent.GetTetrisUpdate();
 	}
+	*/
 	
-	//After the match
+	///////////////////
+	//After the match//
+	///////////////////
 	//@PostMapping(value = "/rematch")
 	public void ApplyForRematch(@RequestBody MatchRegisterResult request)
 	{
