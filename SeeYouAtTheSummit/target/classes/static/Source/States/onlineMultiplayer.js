@@ -415,6 +415,7 @@ onlineMultiplayerState.prototype = {
                     "Content-Type": "application/json"
                 },
                 error: function() {
+                    console.log("Resending freeze");
                     $.ajax(this);
                 }
             }
