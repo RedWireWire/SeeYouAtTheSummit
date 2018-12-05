@@ -55,6 +55,7 @@ game.createPiece = function(estilo,Xpieza,Ypieza,playerNumber, piecePhysicsGroup
     pieza.spawnY = Ypieza;
     pieza.mustBeSentToServer = mustBeSentToServer;
     pieza.singlePlayer = singlePlayer;
+    pieza.isFrozen = false;
     
     //Creation of the desired shape
     pieza.shape = estilo;
@@ -188,7 +189,7 @@ game.directPiece = function(piezaTetris, state)
     leftKey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceLeft);
     rightKey = game.input.keyboard.addKey(piezaTetris.controlScheme.pieceRight);
 
-    if (!piezaTetris.frozen)
+    if (!piezaTetris.isFrozen)
     {
         if (!enterKey.isDown) {
 
@@ -263,10 +264,6 @@ game.movePiece = function(piece, direction)
 {
     for (let i = 0; i < 4; i++)
     {
-    	if (!piece || !piece.bricks || !piece.bricks[i] || !piece.bricks[i].body)
-		{
-    		console.log("mal");
-		}
         piece.bricks[i].body.x += direction * game.scaledCubeSize;
     }
 }
@@ -548,7 +545,7 @@ game.freezePiece = function(piece, state, forceFreeze = false)
         if (!game.pieceIsAllowedToFreeze(piece, state)) return;
     }
     
-    piece.frozen = true;
+    piece.isFrozen = true;
     for (let i = 0; i < 4; i++)
     {
         brick = piece.bricks[i];
@@ -625,10 +622,6 @@ game.getGridCoordinates = function(xPosition, yPosition)
 game.saveBrick = function(brick, x, y, brickPositions)
 {
     game.resizeBrickArrayIfNeeded(x, y, brickPositions);
-    if (!brick || brickPositions.length <= x || brickPositions[x].length <= y)
-	{
-    	console.log("asdf");
-	}
     brickPositions[x][y] = brick;
 }
 
@@ -771,7 +764,6 @@ game.piezaTocandoSuelo = function(piece, groundPhysicsGroup, frozenPiecesPhysics
     {
         //Separo las piezas en diferentes ladrillos para tratarlos por separado.
         var brick = piece.bricks[i];
-
         //Desactivo moviento para manipularla.
         brick.body.moves = false;
         //Guardo su y original.

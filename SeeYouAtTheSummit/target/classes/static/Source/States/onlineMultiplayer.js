@@ -77,6 +77,8 @@ onlineMultiplayerState.prototype = {
         this.onlineSyncedPlayer.previousUpdate = null;
         this.onlineSyncedPlayer.predictedSpeedPerFrame = null;
         
+        this.onlineSyncedPiece = null;
+
         this.initializeOpponentTetrisUpdateBuffer();
     },
 
@@ -316,15 +318,7 @@ onlineMultiplayerState.prototype = {
             case "OPPONENT_UPDATE":
                 if (state.onlineSyncedPlayer != null) 
                 {
-<<<<<<< HEAD
-                    "Content-Type": "application/json"
-                },
-                error: function() {
-                    console.log("Resending freeze");
-                    $.ajax(this);
-=======
                     state.saveOpponentUpdate(parsedMessage);
->>>>>>> IntentoDeMeterWebSockets
                 }
                 break;
             case "TETRIS_UPDATE":
@@ -451,9 +445,13 @@ onlineMultiplayerState.prototype = {
                     break;
 
                 case "CREATE":
-                    game.createPiece(update.shape, update.xPosition, update.yPosition, game.state.getCurrentState().onlineSyncedPlayer.playerNumber, 
-                        game.state.getCurrentState().piecePhysicsGroup, null, 
-                        function(state, piece) {state.onlineSyncedPiece = piece;}, false);
+                    //Avoid duplicate creation
+                    if (this.onlineSyncedPiece == null || this.onlineSyncedPiece.isFrozen)
+                    {
+                        game.createPiece(update.shape, update.xPosition, update.yPosition, this.onlineSyncedPlayer.playerNumber, 
+                            this.piecePhysicsGroup, null, 
+                            function(state, piece) {state.onlineSyncedPiece = piece;}, false);
+                    }
                     break;
 
                 case "ROTATE":
@@ -469,13 +467,11 @@ onlineMultiplayerState.prototype = {
                     break;
                 
                 case "DOWN":
-                    var state = game.state.getCurrentState();
-                    if (piece) game.lowerPiece(piece, state);
+                    if (piece) game.lowerPiece(piece, this);
                     break;
 
                 case "FREEZE":
-                    var state = game.state.getCurrentState();
-                    if (piece) game.freezePiece(piece, state, true);
+                    if (piece) game.freezePiece(piece, this, true);
                     break;
             }
         }
@@ -573,45 +569,7 @@ onlineMultiplayerState.prototype = {
 
     goBackToMainMenu: function()
     {
-        /*
-        $.ajax(
-            "/match",
-            {
-                method: "DELETE",
-                data: JSON.stringify(
-                    {
-                        matchId: matchId,
-                        playerId: playerId
-                    }
-                ),
-                processData: false,
-                headers:{
-                    "Content-Type": "application/json"
-                }
-            }
-        );
-        */
         game.state.start("mainMenuState");
-    },
-
-
-    pollForRematch: function()
-    {
-        $.ajax(
-            "/rematch",
-            {
-                method: "PUT",
-                data: JSON.stringify({
-                    matchId: matchId,
-                    playerId: playerId
-                }),
-                processData: false,
-                headers:{
-                    "Content-Type": "application/json"
-                },
-                success: this.processRematchResponse
-            }
-        )
     },
 
     processRematchResponse: function(response)
