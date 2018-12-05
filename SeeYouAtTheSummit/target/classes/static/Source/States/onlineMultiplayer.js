@@ -92,10 +92,14 @@ onlineMultiplayerState.prototype = {
     ////////////
     startMatch: function()
     {
-        this.currentGameState = game.GameStates.GameInProgress;
-        //Player piece
-        game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
-            function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
+        console.log("Received START_MATCH");
+        if (this.currentGameState != game.GameStates.GameInProgress)
+        {
+            this.currentGameState = game.GameStates.GameInProgress;
+            //Player piece
+            game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
+                function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
+        }
     },
 
     update: function() {
