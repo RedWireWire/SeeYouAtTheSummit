@@ -1,140 +1,350 @@
 package RedWireWire.SeeYouAtTheSummit;
 
 import java.util.*;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.socket.CloseStatus;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.handler.TextWebSocketHandler;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @RestController
-public class PlayerController {
+public class PlayerController extends TextWebSocketHandler {
 	
 	private final int MAX_MATCH_COUNT = 30;
 	
 	public Match[] matches = new Match[MAX_MATCH_COUNT];
+	public Map<WebSocketSession, Player> players = new ConcurrentHashMap<WebSocketSession, Player>();
 	
-	public void ResetServer()
-	{
-		for (int i = 0; i < matches.length; i++)
-		{
-			matches[i] = null;
-		}
-	}
-
-	//Registration
-	@PostMapping(value = "/match")
-	public MatchRegisterResult RegisterToMatch()
-	{
-		MatchRegisterResult match;
-		match = FindOpenMatch();
-		if (match == null) match = CreateMatch();
-		
-		//If something went wrong
-		if (match == null)
-		{
-			return new MatchRegisterResult(-1, -1);
-		}
-		
-		//Add to match
-		Match newMatch = matches[match.matchId];
-		Player newPlayer = new Player();
-		newMatch.SetPlayerById(newPlayer, match.playerId);
-		
-		//Return the acquired Ids
-		return match;
-	}
-
-	@DeleteMapping(value = "/match")
-	public void UnregisterFromMatch(@RequestBody MatchRegisterResult matchRegistration)
-	{
-		if (matches[matchRegistration.matchId] != null)
-		{
-			matches[matchRegistration.matchId].SetPlayerById(null, matchRegistration.playerId);
-			System.out.println("Unregistering player " + matchRegistration.playerId + " from match " + matchRegistration.matchId);
-		}
-		else
-		{
-			System.out.println("Non existant match" + matchRegistration.matchId + " could not be unregistered from by player " + matchRegistration.playerId);
-		}
-	}
+	//Web socket operations
+	private ObjectMapper mapper = new ObjectMapper();
 	
-	@GetMapping(value = "/match/{matchId}")
-	public boolean GetMatchReadiness(@PathVariable int matchId)
+	//Creates and saves a player after establishing a connection with them. 
+	//If the server is full, it closes the connection.
+	@Override
+	public void afterConnectionEstablished(WebSocketSession session) throws Exception
 	{
-		Match match = matches[matchId];
-		if (match != null && match.GetIsReady())
+		System.out.println("Established connection with " + session.getId());
+		Player newPlayer = RegisterPlayer();
+		if (newPlayer == null)
 		{
-			return true;
+			//Close the connection
+			session.close(CloseStatus.SERVICE_OVERLOAD);
 		}
 		else 
 		{
-			return false;
+			//Save the player
+			players.put(session,  newPlayer);
+			newPlayer.webSocketSession = session;
+			TellPlayersToLoadMatch(matches[newPlayer.matchRegistration.matchId]);
 		}
+	}
+	
+	//Unregisters the player that disconnected. Their opponent will be notified.
+	@Override
+	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception
+	{
+		Player unregisteredPlayer = players.remove(session);
+		if (unregisteredPlayer != null)
+		{
+			UnregisterPlayer(unregisteredPlayer);
+		}
+	}
+	
+	//Receives and distributes the client's messages.
+	@Override 
+	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception
+	{
+		//Get the payload
+		JsonNode node = mapper.readTree(message.getPayload());
+		
+		//Get the player
+		Player player = players.get(session);
+		
+		//Get the code
+		String operationCode = node.get("operationCode").asText();
+		
+		//Distribute the message
+		switch (operationCode)
+		{
+			case "ACCEPTANCE":
+				boolean isInAcceptance = node.get("isInAcceptance").asBoolean();
+				//System.out.println("Received ACCEPTANCE: " + Boolean.toString(isInAcceptance) + " from " + session.getId());
+				SetAcceptance(player, isInAcceptance);
+				break;
+			case "PLAYER_UPDATE":
+				//System.out.println("Received PLAYER_UPDATE from " + session.getId());
+				PlayerUpdate newUpdate = SetNewPlayerUpdate(player, node);
+				if (newUpdate != null)
+				{
+					SendOpponentPlayerUpdate(matches[player.matchRegistration.matchId].
+							GetOtherPlayerById(player.matchRegistration.playerId), newUpdate);
+				}	
+				break;
+			case "TETRIS_UPDATE":
+				TetrisUpdate update = AddTetrisUpdate(player, node);
+				Player opponent = matches[player.matchRegistration.matchId].
+						GetOtherPlayerById(player.matchRegistration.playerId);
+				SendTetrisUpdate(opponent, update);
+				break;
+			default:
+				System.out.println(operationCode);
+			}
+		
+	}
+	
+	///////////////
+	//Matchmaking//
+	///////////////
+	
+	//Searches for a match with free space, creating one if necessary, and creates a player. Returns said player.
+	//Returns null if there was no empty space and no match could be created.
+	private Player RegisterPlayer() throws Exception
+	{
+		MatchRegisterResult matchRegistration;
+		matchRegistration = FindOpenMatch();
+		if (matchRegistration == null) matchRegistration = CreateMatch();
+		
+		//If something went wrong
+		if (matchRegistration == null)
+		{
+			return null;
+		}
+		
+		//Add to match
+		Match newMatch = matches[matchRegistration.matchId];
+		Player newPlayer = new Player();
+		newMatch.SetPlayerById(newPlayer, matchRegistration.playerId);
+		newPlayer.matchRegistration = matchRegistration;
+		
+		return newPlayer;
 	}
 
-	
-	//Match start
-	@PutMapping(value = "/acceptance/{matchId}")
-	public boolean SetAcceptance(@PathVariable int matchId, @RequestBody PlayerAcceptance player)
+	private void UnregisterPlayer(Player playerToUnregister)
 	{
-		//Set the acceptance for the player, and return true if both are now in acceptance
-		Match match = matches[matchId];
-		match.GetPlayerById(player.playerId).inAcceptance = player.isInAcceptance;
-		if (match.BothAreInAcceptance()) {
-			System.out.println("yes");
-		}
-		return match.BothAreInAcceptance();
+		Match match = matches[playerToUnregister.matchRegistration.matchId];
+		
+		//Notify the opponent
+		Player opponent = match.GetOtherPlayerById(playerToUnregister.matchRegistration.playerId);
+		//TODO: notify them
+		
+		//Delete the player
+		match.SetPlayerById(null,  playerToUnregister.matchRegistration.playerId);
 	}
 	
-	//Gameplay
-	@PutMapping(value = "/playerupdate/{matchId}")
-	public PlayerUpdate Update(@PathVariable int matchId, @RequestBody PlayerUpdate receivedUpdate)
+	private MatchRegisterResult FindOpenMatch()
 	{
-		Match match = matches[matchId];
-		int playerId = receivedUpdate.playerId;
+		System.out.println("Looking for an open match");
 		
-		//Process the update
-		Player player = match.GetPlayerById(playerId);
-		if (player.lastUpdate == null)
+		for (int i = 0; i  < matches.length; i++)
 		{
-			player.lastUpdate = receivedUpdate;
-		}
-		else
-		{
-			float previousUpdateTime = player.lastUpdate.timeStamp;
-			if (receivedUpdate.timeStamp > previousUpdateTime)
+			if (matches[i] != null)
 			{
-				player.lastUpdate = receivedUpdate;
+				int openPosition = matches[i].GetOpenPosition();
+				if (openPosition != -1)
+				{
+					System.out.println("Found open position " + openPosition + " at match " + i);
+					return new MatchRegisterResult(i, openPosition);
+				}
 			}
 		}
 		
-		
-		Player otherPlayer = match.GetOtherPlayerById(playerId);
-		if (otherPlayer == null)
-		{
-			return new PlayerUpdate();
-		}
-		else return otherPlayer.lastUpdate;
+		System.out.println("No open match found.");
+		return null;
 	}
 	
-	@PostMapping(value = "/tetrisupdate/{matchId}")
-	public void AddTetrisUpdate(@PathVariable int matchId, @RequestBody TetrisUpdate update)
+	private MatchRegisterResult CreateMatch() throws IndexOutOfBoundsException
 	{
-		int playerId = update.playerId;
-		Player player = matches[matchId].GetPlayerById(playerId);
-		player.EnterTetrisUpdate(update);
+		for (int i = 0; i  < matches.length; i++)
+		{
+			if (matches[i] == null)
+				{
+					System.out.println("Creating match with id " + i);
+					matches[i] = new Match();
+					return new MatchRegisterResult(i, 1);
+				}
+		}
+		
+		throw(new IndexOutOfBoundsException());
 	}
 	
-	@PutMapping(value = "/tetrisupdate/{matchId}")
+	private void TellPlayersToLoadMatch(Match match) throws Exception
+	{
+		if (match.GetIsReady())
+		{
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode","LOAD_MATCH");
+			
+			node.put("playerId", 1);			
+			TextMessage message = new TextMessage(node.toString());
+			Player player = match.GetPlayerById(1);
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);;
+			}
+			
+			
+			node.put("playerId", 2);
+			message = new TextMessage(node.toString());
+			player = match.GetPlayerById(2);
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);;
+			}
+		}
+	}
+	
+
+
+	///////////////
+	//Match start//
+	///////////////
+	
+	//Sets a player as accepting. If we thery're both acccepting, they will both be notified.
+	private void SetAcceptance(Player player, boolean isInAcceptance) throws Exception
+	{
+		player.inAcceptance = isInAcceptance;
+		Match match = matches[player.matchRegistration.matchId];
+		NotifyPlayersIfBothAccept(match);
+	}
+	
+	//Sends an ACCEPTED message to both players. 
+	private void NotifyPlayersIfBothAccept(Match match) throws Exception
+	{
+		if (match.BothAreInAcceptance())
+		{
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode", "START_MATCH");
+			
+			TextMessage message = new TextMessage(node.toString());
+			
+			Player player = match.GetPlayerById(1); 
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);
+			}
+			
+			player = match.GetPlayerById(2);
+			synchronized (player.webSocketSession)
+			{
+				player.webSocketSession.sendMessage(message);
+			}
+		}
+	}
+	
+	////////////
+	//Gameplay//
+	////////////
+	
+	//Sets a new last player update if it is more recent than the last. 
+	//Returns the new update, or null if it wasn't more recent.
+	private PlayerUpdate SetNewPlayerUpdate(Player player, JsonNode node) throws Exception
+	{
+		float newUpdateTimeStamp = node.get("timeStamp").floatValue();
+		
+		//Ensure that the new update is more recent
+		if (player != null && (player.lastUpdate == null || player.lastUpdate.timeStamp < newUpdateTimeStamp))
+		{
+			//Create the update
+			PlayerUpdate newUpdate = new PlayerUpdate();
+			newUpdate.x = node.get("x").floatValue();
+			newUpdate.y = node.get("y").floatValue();
+			newUpdate.animationCode = node.get("animationCode").asInt();
+			newUpdate.isDead = node.get("isDead").asBoolean();
+			newUpdate.timeStamp = newUpdateTimeStamp;
+			
+			//Set it
+			player.lastUpdate = newUpdate;
+			
+			return newUpdate;
+		}
+		else
+		{
+			return null;
+		}
+	}
+	
+	//Send a player update to the specified opponent
+	private void SendOpponentPlayerUpdate(Player opponent, PlayerUpdate update) throws Exception
+	{
+		if (opponent != null)
+		{
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode", "OPPONENT_UPDATE");
+			node.put("x", update.x);
+			node.put("y", update.y);
+			node.put("animationCode", update.animationCode);
+			node.put("isDead", update.isDead);
+			node.put("timeStamp", update.timeStamp);
+			
+			TextMessage message = new TextMessage(node.toString());
+			synchronized (opponent.webSocketSession)
+			{
+				opponent.webSocketSession.sendMessage(message);
+			}
+			//System.out.println("Sending update to " + opponent.webSocketSession.getId());
+		}
+	}
+	
+	//Buffers a tetris update from the specified player
+	private TetrisUpdate AddTetrisUpdate(Player player, JsonNode node) 
+
+	{
+		TetrisUpdate update = new TetrisUpdate();
+		update.timeStamp = node.get("timeStamp").floatValue();
+		update.actionCode = node.get("actionCode").asText();
+		update.xPosition = node.get("xPosition").asInt();
+		update.yPosition = node.get("yPosition").asInt();
+		update.shape = node.get("shape").asInt();
+				
+		//player.EnterTetrisUpdate(update);
+		return update;
+	}
+	
+	private void SendTetrisUpdate(Player opponent, TetrisUpdate update) throws Exception
+	{
+		if (opponent != null)
+		{
+			ObjectNode node = mapper.createObjectNode();
+			node.put("operationCode", "TETRIS_UPDATE");
+			node.put("actionCode", update.actionCode);
+			node.put("timeStamp", update.timeStamp);
+			node.put("xPosition", update.xPosition);
+			node.put("yPosition", update.yPosition);
+			node.put("shape", update.shape);
+			
+			TextMessage message = new TextMessage(node.toString());
+			synchronized (opponent.webSocketSession)
+			{
+				opponent.webSocketSession.sendMessage(message);
+			}
+			//System.out.println("Sending "+ update.actionCode +" to " + opponent.webSocketSession.getId());
+		}
+	}
+	
+	
+	/*
+	//@PutMapping(value = "/tetrisupdate/{matchId}")
 	public TetrisUpdate GetTetrisUpdate(@PathVariable int matchId, @RequestBody IDWrapper requestingPlayerId)
 	{
 		Player opponent = matches[matchId].GetOtherPlayerById((requestingPlayerId.id));
 		return opponent.GetTetrisUpdate();
 	}
+	*/
 	
-	//After the match
-	@PostMapping(value = "/rematch")
+	///////////////////
+	//After the match//
+	///////////////////
+	//@PostMapping(value = "/rematch")
 	public void ApplyForRematch(@RequestBody MatchRegisterResult request)
 	{
 		Match match = matches[request.matchId];
@@ -144,7 +354,7 @@ public class PlayerController {
 		match.GetPlayerById(2).notifiedAboutRematch = false;
 	}
 	
-	@PutMapping(value = "/rematch")
+	//@PutMapping(value = "/rematch")
 	public int GetRematch(@RequestBody MatchRegisterResult request)
 	{
 		Match oldMatch = matches[request.matchId];
@@ -167,42 +377,7 @@ public class PlayerController {
 	
 	
 	//Matchmaking utilities
-	private MatchRegisterResult FindOpenMatch()
-	{
-		System.out.println("Looking for an open match");
-		
-		for (int i = 0; i  < matches.length; i++)
-		{
-			if (matches[i] != null)
-			{
-				int openPosition = matches[i].GetOpenPosition();
-				if (openPosition != -1)
-				{
-					System.out.println("Found open position " + openPosition + " at match " + i);
-					return new MatchRegisterResult(i, openPosition);
-				}
-			}
-		}
-		
-		System.out.println("No open match found.");
-		return null;
-	}
 	
-
-	private MatchRegisterResult CreateMatch() throws IndexOutOfBoundsException
-	{
-		for (int i = 0; i  < matches.length; i++)
-		{
-			if (matches[i] == null)
-				{
-					System.out.println("Creating match with id " + i);
-					matches[i] = new Match();
-					return new MatchRegisterResult(i, 1);
-				}
-		}
-		
-		throw(new IndexOutOfBoundsException());
-	}
 	
 	private void DoRematch(int matchId)
 	{

@@ -33,4 +33,6 @@ bootState.prototype = {
     update: function() {
 
     }
+
+    
 }
