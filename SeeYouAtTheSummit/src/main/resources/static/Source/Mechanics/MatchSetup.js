@@ -246,7 +246,7 @@ game.getPlayerScreenTopOvershoot = function(player)
 }
 
 //Others
-game.announce = function(message)
+game.announce = function(message,xPosition=0,yPosition=0)
 { 
     game.deletePreviousAnnouncement();
 
@@ -256,8 +256,8 @@ game.announce = function(message)
     //Show it
     game.announcementText = game.add.text(gameWidth / 2 - 150, gameHeight / 2, message, style);
     game.announcementText.anchor.setTo(1, 0.5);
-    game.announcementText.x = gameWidth - 25;
-    game.announcementText.y = gameHeight / 2 + 75;
+    game.announcementText.x = gameWidth - 25 - xPosition;
+    game.announcementText.y = gameHeight / 2 + 75 - yPosition;
     console.log(message);
     game.announcementText.fixedToCamera = true;
 }

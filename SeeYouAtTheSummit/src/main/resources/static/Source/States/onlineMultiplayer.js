@@ -4,6 +4,7 @@ var onlineMultiplayerState = function(game) {
 
 var doMovementPrediction = true;
 var predictedMomentumFactor = 0.6;
+var respectMessage;
 
 onlineMultiplayerState.prototype = {
     //////////////////
@@ -35,6 +36,8 @@ onlineMultiplayerState.prototype = {
     },    
 
     create: function() {
+        this.group = game.add.group();
+
         game.stopLoadingScreen();
         
         game.setupLevel(this);
@@ -96,6 +99,7 @@ onlineMultiplayerState.prototype = {
         if (this.currentGameState != game.GameStates.GameInProgress)
         {
             this.currentGameState = game.GameStates.GameInProgress;
+            game.deletePreviousAnnouncement();
             //Player piece
             game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
                 function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
@@ -117,6 +121,8 @@ onlineMultiplayerState.prototype = {
             //Move player
             game.reactToPlayerInput(this.controlledPlayer, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
             game.updatePlayerAnimation(this.controlledPlayer);
+            
+            game.announce("Mostrad vuestros respetos",200,200);
             
             //Move opponent
             this.sendPlayerUpdate(this.controlledPlayer);
@@ -217,7 +223,7 @@ onlineMultiplayerState.prototype = {
             
             isInAcceptance: isInAcceptance
         };
-
+        
         webSocketSession.send(JSON.stringify(payload));
     },
 
