@@ -300,6 +300,9 @@ game.updatePlayerAnimation = function(player)
 {
     var sign = Math.sign(player.animationCode);
     player.isInAcceptance = false;
+
+    if (!player.previousAnimation) player.previousAnimation = game.AnimationCodes.Idle;
+
     switch (Math.abs(player.animationCode))
     {
         case game.AnimationCodes.Idle: 
@@ -309,19 +312,42 @@ game.updatePlayerAnimation = function(player)
         case game.AnimationCodes.Run:
             player.scale.x = Math.abs(player.scale.x) * sign;
             player.animations.play("walk");
+            if (player.previousAnimation != player.animationCode) game.sfxRun.play();
             break;
         case game.AnimationCodes.Jump:
             player.animations.play("jump");
+
+            if (Math.abs(player.previousAnimation) == game.AnimationCodes.Wallgrab) 
+            {
+                game.sfxWallJump.play();
+            }
+            else if (player.previousAnimation != game.AnimationCodes.Jump) 
+            {
+                game.sfxJump.play();
+            }
             break;
         case game.AnimationCodes.Wallgrab:
             player.scale.x = Math.abs(player.scale.x) * sign;
-            player.animations.play("grabWall");
+            
+            if (player.previousAnimation != player.animationCode) player.animations.play("grabWall");
             break;
         case game.AnimationCodes.Pose:
             player.animations.play("pose");
             player.isInAcceptance = true;
             break;
     }
+
+    //Stop sounds if state changed and it is necessary to
+    switch (Math.abs(player.previousAnimation))
+    {
+        case game.AnimationCodes.Run:
+            if (Math.abs(player.animationCode) != Math.abs(game.AnimationCodes.Run)) game.sfxRun.stop();
+            break;
+        case game.AnimationCodes.Wallgrab:
+            if (Math.abs(player.animationCode) != Math.abs(game.AnimationCodes.Wallgrab)) game.sfxWallSlide.stop();
+    }
+
+    player.previousAnimation = player.animationCode;
 }
 
 game.playerIsGrounded = function(player, groundPhysicsGroup, frozenPiecesPhysicsGroup)

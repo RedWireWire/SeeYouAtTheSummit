@@ -64,6 +64,38 @@ game.loadBackgroundTraining = function () {
         game.load.image("background", "Assets/EscenarioYFondos/FondoEntrenamiento.png");
 }
 
+
+game.loadSounds = function()
+{
+    game.load.audio("jump", ["Assets/SFX/jump.ogg"]);
+    game.load.audio("lose", ["Assets/SFX/lose.ogg"]);
+    game.load.audio("run", ["Assets/SFX/run.ogg"]);
+    game.load.audio("tetrisCantFreeze", ["Assets/SFX/cantFreeze.ogg"]);
+    game.load.audio("tetrisClear", ["Assets/SFX/tetrisClear.ogg"]);
+    game.load.audio("tetrisDown", ["Assets/SFX/tetrisDown.ogg"]);
+    game.load.audio("tetrisMove", ["Assets/SFX/tetrisMove.ogg"]);
+    game.load.audio("wallJump", ["Assets/SFX/wallJump.ogg"]);
+    game.load.audio("wallSlide", ["Assets/SFX/wallSlide.ogg"]);
+}
+
+game.createSounds = function()
+{
+    game.sfxJump = game.sound.add("jump");
+    game.sfxLose = game.sound.add("lose");
+    game.sfxRun = game.sound.add("run");
+    game.sfxRun.loop = true;
+    game.sfxTetrisCantFreeze = game.sound.add("tetrisCantFreeze");
+    game.sfxTetrisClear = game.sound.add("tetrisClear");
+    game.sfxTetrisDown = game.sound.add("tetrisDown");
+    game.sfxTetrisMove = game.sound.add("tetrisMove");
+    game.sfxWallJump = game.sound.add("wallJump");
+    game.sfxWallSlide = game.sound.add("wallSlide");
+    game.sfxWallSlide.loop = true;
+
+    //FREEZE SOUND MISSING
+    //ROTATE SOUND MISSING
+}
+
 //Initialization
 game.initializePhysicsGroups = function(state)
 {

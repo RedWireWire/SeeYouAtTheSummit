@@ -23,6 +23,8 @@ onlineMultiplayerState.prototype = {
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
 
+        game.loadSounds();
+
         //Initialize a bunch of variables
         //Game state
         this.currentGameState = game.GameStates.PreGame;
@@ -41,6 +43,8 @@ onlineMultiplayerState.prototype = {
         game.setupLevel(this);
 
         game.initializeBackgrounds(this);
+
+        game.createSounds();
 
         //Physics initialization
         game.initializePhysicsGroups(this);
@@ -466,11 +470,13 @@ onlineMultiplayerState.prototype = {
                     break;
 
                 case "RIGHT":
-                	if (piece) game.movePiece(piece, 1);
+                    if (piece) game.movePiece(piece, 1);
+                    game.sfxTetrisMove.play();
                     break;
 
                 case "LEFT":
-                	if (piece) game.movePiece(piece, -1);
+                    if (piece) game.movePiece(piece, -1);
+                    game.sfxTetrisMove.play();
                     break;
                 
                 case "DOWN":
@@ -511,51 +517,26 @@ onlineMultiplayerState.prototype = {
             {
                 this.currentGameState = game.GameStates.Draw;
                 game.announce("Everybody loses.");
+                game.sfxLose.play();
             }
             else
             {
                 this.currentGameState = game.GameStates.PlayerLost;
                 game.announce("Only you lose.");
+                game.sfxLose.play();
             }
         }
         else if (onlinePlayer.isDead)
         {
             this.currentGameState = game.GameStates.PlayerWon;
             game.announce("Everybody but you loses.");
+            game.sfxLose.play();
         }
     },
 
     //////////////////
     //After the game//
     //////////////////
-    checkForBackToMenuOrRematch: function()
-    {
-        if (game.input.keyboard.isDown(Phaser.Keyboard.ESC))
-        {
-            this.goBackToMainMenu();
-        }
-        else if (game.input.keyboard.isDown(Phaser.Keyboard.ENTER))
-        {
-            $.ajax(
-                "/rematch",
-                {
-                    method:"POST",
-                    data: JSON.stringify(
-                        {
-                            matchId: matchId,
-                            playerId: playerId
-                        }
-                    ),
-                    processData: false,
-                    headers:{
-                        "Content-Type": "application/json"
-                    },
-
-                    success: this.startWaitingForRematch
-                }
-            )
-        }
-    },
 
     checkForBackToMenuOnly: function()
     {

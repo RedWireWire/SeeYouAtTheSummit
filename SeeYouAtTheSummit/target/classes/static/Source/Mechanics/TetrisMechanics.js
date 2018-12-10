@@ -255,6 +255,7 @@ game.attemptToMovePiece = function(piece, direction)
 {
     if(game.isAllowedToMove(piece, direction)){
         game.movePiece(piece, direction);
+        game.sfxTetrisMove.play();
         return true;
     }
     else return false;
@@ -300,8 +301,6 @@ game.limitesLateralesPiezas = function(piece, condition)
 
 game.lowerPiece = function(piece, state)
 {
-    console.log(game.pieceIsOnScreen(piece));
-
     //Comprueba si la pieza está colisionando con el suelo.
     if (game.piezaTocandoSuelo(piece, state.groundPhysicsGroup, state.frozenPiecesPhysicsGroup)  && 
         game.pieceIsOnScreen(piece))
@@ -315,6 +314,7 @@ game.lowerPiece = function(piece, state)
             piece.bricks[i].y += game.scaledCubeSize;
         }
         if (piece.mustBeSentToServer) state.postTetrisMove(piece, "DOWN");
+        game.sfxTetrisDown.play();
     }
 }
 
@@ -545,7 +545,11 @@ game.freezePiece = function(piece, state, forceFreeze = false)
     //Comprueba si la pieza se puede detener en el sitio en el que esté.
     if (!forceFreeze)
     {
-        if (!game.pieceIsAllowedToFreeze(piece, state)) return;
+        if (!game.pieceIsAllowedToFreeze(piece, state)) 
+        {
+            game.sfxTetrisCantFreeze.play();
+            return;
+        }
     }
     
     piece.isFrozen = true;
@@ -759,6 +763,8 @@ game.deleteBrick = function(x, y, brickPositions)
     {
         brick.destroy();
         brickPositions[x][y] = undefined;
+
+        if (!game.sfxTetrisClear.isPlaying) game.sfxTetrisClear.play();
     }
 }
 

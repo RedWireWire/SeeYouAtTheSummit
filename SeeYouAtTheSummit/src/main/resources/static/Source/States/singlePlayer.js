@@ -8,10 +8,14 @@ singlePlayerState.prototype = {
 
     preload: function() 
     {
+        game.startLoadingScreen();
+
         //Load sprites
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
+
+        game.loadSounds();
 
         //Initialize a bunch of variables
         //Game state
@@ -25,9 +29,13 @@ singlePlayerState.prototype = {
     },    
 
     create: function() {
+        game.stopLoadingScreen();
+
         game.setupLevel(this);
 
         game.initializeBackgrounds(this);
+
+        game.createSounds();
 
         //Physics initialization
         game.initializePhysicsGroups(this);
@@ -129,39 +137,13 @@ singlePlayerState.prototype = {
         {
             this.currentGameState = game.GameStates.PlayerLost;
             this.loserPlayer = this.player1;
-            game.announce("That one's completely on you.")
+            game.announce("That one's completely on you.");
+            game.sfxLose.play();
         }
     },
 
-    announceGameEnd: function()
-    {
-
-        var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
-        var message = "";
-        if (this.currentGameState == game.GameStates.PlayerLost)
-        {
-            message = "You lose.";
-        }
-        var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
-        console.log(message);
-        announcementText.fixedToCamera = true;
-        this.getCurrentScore();
-    },
 
 
-    getCurrentScore: function()
-    {
-        var path = "/score";
-        $.ajax(
-            path,
-            {
-                type: "get",
-                success: function(data) { console.log(data);},
-                error: function() { console.log("Error");}
-            }
-        );
-    },
-    
     checkForBackToMenu: function()
     {
         if (game.input.keyboard.isDown(Phaser.Keyboard.ESC) || game.input.keyboard.isDown(Phaser.Keyboard.ENTER))

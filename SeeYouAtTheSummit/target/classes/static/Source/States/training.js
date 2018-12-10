@@ -12,6 +12,9 @@ trainingState.prototype = {
         game.load.image("ground", "Assets/EscenarioYFondos/Suelo.png");
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
+        
+        game.loadSounds();
+
         game.loadBackgroundTraining();
         //Initialize a bunch of variables
         //Game state
@@ -28,6 +31,8 @@ trainingState.prototype = {
         game.setupLevel(this);
 
         game.initializeTrainingBackground(this);
+
+        game.createSounds();
 
         //Physics initialization
         game.initializePhysicsGroups(this);
@@ -103,22 +108,11 @@ trainingState.prototype = {
         {
             this.currentGameState = game.GameStates.PlayerLost;
             this.loserPlayer = this.player1;
-            game.announce("That's why you're training.")
+            game.announce("That's why you're training.");
+            game.sfxLose.play();
         }
     },
 
-    getCurrentScore: function()
-    {
-        var path = "/score";
-        $.ajax(
-            path,
-            {
-                type: "get",
-                success: function(data) { console.log(data);},
-                error: function() { console.log("Error");}
-            }
-        );
-    },
     
     checkForBackToMenu: function()
     {

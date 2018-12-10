@@ -13,6 +13,8 @@ localMultiplayerState.prototype = {
         game.load.spritesheet("playerSpriteSheet", "Assets/Sprites/SpriteSheetBlanco.png", game.playerUnscaledSpriteWidth, game.playerUnscaledSpriteHeight, 11);
         game.load.image("piece", "Assets/Sprites/Bloque.png");
 
+        game.loadSounds();
+
         //Initialize a bunch of variables
         //Game state
         this.currentGameState = game.GameStates.PreGame;
@@ -30,6 +32,8 @@ localMultiplayerState.prototype = {
         game.setupLevel(this);
 
         game.initializeBackgrounds(this);
+
+        game.createSounds();
 
         //Physics initialization
         game.initializePhysicsGroups(this);
@@ -175,7 +179,7 @@ localMultiplayerState.prototype = {
 
     announceGameEnd: function()
     {
-
+        game.sfxLose.play();
         var style = { font: "65px Arial", fill: "#DF4BB3", align: "center" };
         var message = "";
         if (this.currentGameState == game.GameStates.PlayerLost)
