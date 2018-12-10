@@ -4,6 +4,7 @@ var onlineMultiplayerState = function(game) {
 
 var doMovementPrediction = true;
 var predictedMomentumFactor = 0.6;
+var respectMessage;
 
 onlineMultiplayerState.prototype = {
     //////////////////
@@ -35,6 +36,7 @@ onlineMultiplayerState.prototype = {
     },    
 
     create: function() {
+        this.group = game.add.group();
 
         game.stopLoadingScreen();
         
