@@ -35,6 +35,7 @@ onlineMultiplayerState.prototype = {
     },    
 
     create: function() {
+
         game.stopLoadingScreen();
         
         game.setupLevel(this);
@@ -80,6 +81,8 @@ onlineMultiplayerState.prototype = {
         this.onlineSyncedPiece = null;
 
         this.initializeOpponentTetrisUpdateBuffer();
+
+        game.announce("Mostrad vuestros respetos",200,200);
     },
 
     initializeOpponentTetrisUpdateBuffer: function(piece)
@@ -96,6 +99,7 @@ onlineMultiplayerState.prototype = {
         if (this.currentGameState != game.GameStates.GameInProgress)
         {
             this.currentGameState = game.GameStates.GameInProgress;
+            game.deletePreviousAnnouncement();
             //Player piece
             game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
                 function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
@@ -105,7 +109,6 @@ onlineMultiplayerState.prototype = {
     update: function() {
         
         this.timeStamp += game.time.physicsElapsedMS;
-        
 
         //Collisions
         game.physics.arcade.collide(this.groundPhysicsGroup, this.controlledPlayer);
@@ -217,7 +220,7 @@ onlineMultiplayerState.prototype = {
             
             isInAcceptance: isInAcceptance
         };
-
+        
         webSocketSession.send(JSON.stringify(payload));
     },
 

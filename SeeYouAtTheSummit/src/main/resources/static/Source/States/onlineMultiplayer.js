@@ -81,6 +81,8 @@ onlineMultiplayerState.prototype = {
         this.onlineSyncedPiece = null;
 
         this.initializeOpponentTetrisUpdateBuffer();
+
+        game.announce("Mostrad vuestros respetos",200,200);
     },
 
     initializeOpponentTetrisUpdateBuffer: function(piece)
@@ -107,7 +109,6 @@ onlineMultiplayerState.prototype = {
     update: function() {
         
         this.timeStamp += game.time.physicsElapsedMS;
-        
 
         //Collisions
         game.physics.arcade.collide(this.groundPhysicsGroup, this.controlledPlayer);
@@ -119,8 +120,6 @@ onlineMultiplayerState.prototype = {
             //Move player
             game.reactToPlayerInput(this.controlledPlayer, this.currentGameState, this.groundPhysicsGroup, this.frozenPiecesPhysicsGroup);
             game.updatePlayerAnimation(this.controlledPlayer);
-            
-            game.announce("Mostrad vuestros respetos",200,200);
             
             //Move opponent
             this.sendPlayerUpdate(this.controlledPlayer);
