@@ -12,7 +12,7 @@ game.pieceSpawnScreenBottomMarginInCubes = 15;
 game.pieceSpawnXFromCenterInCubes = 5;
 
 //Timings
-game.autoDescendTime = 45;
+game.autoDescendTime = 30;
 game.nextPieceWaitTime = 2000;  //In miliseconds
 
 //Brick system

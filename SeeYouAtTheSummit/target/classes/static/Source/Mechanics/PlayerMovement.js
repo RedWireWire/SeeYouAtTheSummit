@@ -13,7 +13,7 @@ game.wallJumpXComponentFactor = 0.5;
 
 game.playerMoveAcceleration = 1200;
 game.playerMaxHorizontalSpeed = 500;
-game.playerHorizontalDrag = 20;
+game.playerHorizontalDrag = 40;
 
 game.playerAirborneAccelFactor = 0.4;
 game.playerAirborneDragFactor = 0.1;
@@ -21,7 +21,7 @@ game.playerAirborneDragFactor = 0.1;
 //Player sprite settings
 game.playerUnscaledSpriteWidth = 250;
 game.playerUnscaledSpriteHeight = 200;
-game.playerSpriteScale = 0.5;
+game.playerSpriteScale = 0.48;
 
 game.playerSpriteCenterX = 0.47;
 game.playerSpriteCenterY = 0.5;
