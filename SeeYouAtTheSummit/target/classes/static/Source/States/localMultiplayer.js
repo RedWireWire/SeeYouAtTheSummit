@@ -205,7 +205,7 @@ localMultiplayerState.prototype = {
         var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
         console.log(message);
         announcementText.fixedToCamera = true;
-        this.getCurrentScore();
+        //this.getCurrentScore();
     },
 
 

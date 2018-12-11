@@ -303,7 +303,7 @@ game.lowerPiece = function(piece, state)
 {
     //Comprueba si la pieza está colisionando con el suelo.
     if (game.piezaTocandoSuelo(piece, state.groundPhysicsGroup, state.frozenPiecesPhysicsGroup)  && 
-        game.pieceIsOnScreen(piece))
+        game.pieceIsOnScreenOrUnder(piece))
     {
         game.freezePiece(piece, state);
     }
@@ -594,7 +594,7 @@ game.freezePiece = function(piece, state, forceFreeze = false)
 
 game.pieceIsAllowedToFreeze = function(piece, state)
 {
-    if (!game.pieceIsOnScreen(piece)) return false;
+    if (!game.pieceIsOnScreenOrUnder(piece)) return false;
 
     var placeOccupied = false;
         for (let i = 0; i < 4; i++)
@@ -802,12 +802,35 @@ game.piezaTocandoSuelo = function(piece, groundPhysicsGroup, frozenPiecesPhysics
     return false;
 }
 
-game.pieceIsOnScreen = function(piece)
+game.pieceIsOnScreenOrUnder = function(piece)
 {
+    var onScreen = true;
+
     for (let i = 0; i < 4; i++)
     {
-        if (!piece.bricks[i].inCamera) return false;
+        if (!piece.bricks[i].inCamera) 
+        {
+            onScreen = false;
+            break;
+        }
     }
-    return true;
+    
+    if (onScreen)
+    {
+        return true;
+    }
+    else
+    {
+        //See if the piece is under the camera. Any brick will do.
+        var brickPosition = piece.bricks[0].y;
+
+
+        console.log("Brick: " + brickPosition + " Camera: " + game.camera.y);
+        if (brickPosition > game.camera.y + game.camera.height / 2)
+        {
+            return true;
+        }
+        else return false;
+    }
 }
 
