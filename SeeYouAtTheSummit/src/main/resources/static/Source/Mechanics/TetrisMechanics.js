@@ -314,7 +314,7 @@ game.lowerPiece = function(piece, state)
             piece.bricks[i].y += game.scaledCubeSize;
         }
         if (piece.mustBeSentToServer) state.postTetrisMove(piece, "DOWN");
-        game.sfxTetrisDown.play();
+        game.sfxTetrisMove.play();
     }
 }
 
@@ -334,6 +334,7 @@ game.attemptToRotatePiece = function(piece, groundPhysicsGroup, frozenPiecesPhys
         game.rotatePiece(piece);
         //Se pone el temporizador de caida de la pieza a 0.
         if (game.piezaTocandoSuelo(piece, groundPhysicsGroup, frozenPiecesPhysicsGroup)) piece.moveTimer = 0;
+        game.sfxTetrisRotate.play();
         return true;
     }
     else return false;
@@ -572,6 +573,8 @@ game.freezePiece = function(piece, state, forceFreeze = false)
         //Sprite
         brick.alpha = 1;
     }
+
+    game.sfxTetrisFreeze.play();
 
     if (piece.mustBeSentToServer)
     {

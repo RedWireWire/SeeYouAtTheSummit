@@ -52,6 +52,9 @@ localMultiplayerState.prototype = {
             function(state, piece) { state.player1Piece = piece;});
         game.nextPiece(2, this, this.player2.controlScheme,
             function(state, piece) { state.player2Piece = piece;});
+
+        //Starting the match now
+
     },
 
     update: function() {
@@ -63,7 +66,7 @@ localMultiplayerState.prototype = {
 
         if (this.currentGameState == game.GameStates.PreGame)
         {
-            this.currentGameState = game.GameStates.GameInProgress;
+            this.startGame();
         }
         else 
         {
@@ -133,9 +136,18 @@ localMultiplayerState.prototype = {
     },
 
 
+
+
     //////////////
     //GAME STATE//
     //////////////
+    startGame: function()
+    {
+        this.currentGameState = game.GameStates.GameInProgress;
+        calmMusic.stop();
+        matchMusic.play();
+    },
+
     checkForGameEnd: function()
     {
         //are the players on screen?
@@ -193,7 +205,7 @@ localMultiplayerState.prototype = {
         var announcementText = game.add.text(gameWidth / 2, gameHeight / 2, message, style);
         console.log(message);
         announcementText.fixedToCamera = true;
-        this.getCurrentScore();
+        //this.getCurrentScore();
     },
 
 

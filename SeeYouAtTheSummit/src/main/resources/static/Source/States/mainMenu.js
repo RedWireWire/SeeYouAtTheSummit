@@ -37,6 +37,10 @@ var buttonsColorOver=0xDF4BB3;
 var firstMenu=false;
 var secondMenu=false;
 
+//Music
+var calmMusic;
+var matchMusic;
+
 mainMenuState.prototype = {
 
     preload: function() {
@@ -48,6 +52,9 @@ mainMenuState.prototype = {
         game.load.image("menuBackground", "Assets/MainMenu/FondoMenuPrincipalSinCielo.png");
         this.loadButtons();
 
+        //Load music
+        game.load.audio("calmSong", "Assets/Music/november.mp3");
+
         //Initialize variables
         this.clouds = new Array(0);
     },
@@ -55,12 +62,27 @@ mainMenuState.prototype = {
     create: function() {
         firstMenu = false;
         secondMenu = false;
+
         //Use for sorting
         this.group = game.add.group();
 
         //Background
         game.stage.backgroundColor = mainMenuBackgroundColor;
         this.background = this.createBackground();
+
+        //Music
+        if (!calmMusic)
+        {
+            calmMusic = game.add.audio("calmSong");
+            calmMusic.loop = true;
+            calmMusic.volume = 0.8;
+        }
+        if (!calmMusic.isPlaying)
+        {
+            calmMusic.play();
+        }
+        if (matchMusic) matchMusic.stop();
+        
 
         //Title
         this.title = this.createTitle();

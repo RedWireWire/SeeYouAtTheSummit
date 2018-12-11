@@ -51,7 +51,6 @@ game.stopLoadingScreen = function()
     game.loadingBackground.destroy();
 }
 
-
 game.loadBackgrounds = function()
 {
     for (let i = 0; i < game.numberOfBackgrounds; i++)
@@ -64,7 +63,6 @@ game.loadBackgroundTraining = function () {
         game.load.image("background", "Assets/EscenarioYFondos/FondoEntrenamiento.png");
 }
 
-
 game.loadSounds = function()
 {
     game.load.audio("jump", ["Assets/SFX/jump.ogg"]);
@@ -72,28 +70,36 @@ game.loadSounds = function()
     game.load.audio("run", ["Assets/SFX/run.ogg"]);
     game.load.audio("tetrisCantFreeze", ["Assets/SFX/cantFreeze.ogg"]);
     game.load.audio("tetrisClear", ["Assets/SFX/tetrisClear.ogg"]);
-    game.load.audio("tetrisDown", ["Assets/SFX/tetrisDown.ogg"]);
     game.load.audio("tetrisMove", ["Assets/SFX/tetrisMove.ogg"]);
+    game.load.audio("tetrisFreeze", ["Assets/SFX/tetrisFreeze.ogg"]);
+    game.load.audio("tetrisRotate", ["Assets/SFX/tetrisRotate.ogg"]);
     game.load.audio("wallJump", ["Assets/SFX/wallJump.ogg"]);
     game.load.audio("wallSlide", ["Assets/SFX/wallSlide.ogg"]);
+
+    game.load.audio("matchMusic", "Assets/Music/downtown.mp3");
+    
 }
 
 game.createSounds = function()
 {
     game.sfxJump = game.sound.add("jump");
     game.sfxLose = game.sound.add("lose");
+    game.sfxLose.volume = 0.5;
     game.sfxRun = game.sound.add("run");
     game.sfxRun.loop = true;
     game.sfxTetrisCantFreeze = game.sound.add("tetrisCantFreeze");
     game.sfxTetrisClear = game.sound.add("tetrisClear");
-    game.sfxTetrisDown = game.sound.add("tetrisDown");
     game.sfxTetrisMove = game.sound.add("tetrisMove");
+    game.sfxTetrisMove.volume = 0.4;
+    game.sfxTetrisFreeze = game.sound.add("tetrisFreeze");
+    game.sfxTetrisRotate = game.sound.add("tetrisRotate");
     game.sfxWallJump = game.sound.add("wallJump");
     game.sfxWallSlide = game.sound.add("wallSlide");
     game.sfxWallSlide.loop = true;
 
-    //FREEZE SOUND MISSING
-    //ROTATE SOUND MISSING
+    matchMusic = game.sound.add("matchMusic");
+    matchMusic.loop = true;
+    matchMusic.volume = 0.3;
 }
 
 //Initialization

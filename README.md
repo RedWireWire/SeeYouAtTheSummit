@@ -64,3 +64,6 @@ Cada acción de los jugadores tendrá sonidos cortos y satisfactorios asociados.
 La única interfaz actual en el juego es la del Menú Principal y la existente al final de cada partida. En el menú la interfaz está presente con las diferentes opciones de elección de modo de juego, siendo cada una de ellas el texto que informa de su función (no son botones sino palabras no contenidas en cajas). Por otra parte al acabar cada partida un texto aparece en medio de la pantalla anunciando al ganador de esta (se está estudiando retocar estéticamente estos textos). Por último podríamos considerar la pantalla de carga previa a las partidas multijugador. Esta pantalla muestra una ilustración y un icono rotando, con el cual el jugador puede intuir que se está buscando a un oponente/se está cargando su partida. Se estudia la posibilidad de implementar más interfaz al juego.
 ![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Interfaz-pantalla-victoria.png)
 ![](https://github.com/RedWireWire/SeeYouAtTheSummit/blob/master/Interfaces/Interfaz-pantalla-derrota.png)
+
+# Créditos adicionales
+Música "royalty free" proporcionada por https://www.bensound.com/

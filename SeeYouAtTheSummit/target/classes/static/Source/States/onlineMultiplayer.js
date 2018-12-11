@@ -104,9 +104,13 @@ onlineMultiplayerState.prototype = {
         {
             this.currentGameState = game.GameStates.GameInProgress;
             game.deletePreviousAnnouncement();
+            
             //Player piece
             game.nextPiece(this.controlledPlayerNumber, this, this.controlledPlayer.controlScheme, 
                 function(state, piece) { state.controlledPiece = piece; state.postTetrisCreate(piece)}, true);
+
+            calmMusic.stop();
+            matchMusic.play();
         }
     },
 
@@ -466,7 +470,11 @@ onlineMultiplayerState.prototype = {
                     break;
 
                 case "ROTATE":
-                	if (piece) game.rotatePiece(piece);
+                    if (piece) 
+                    {
+                        game.rotatePiece(piece);
+                        game.sfxTetrisRotate.play();
+                    }
                     break;
 
                 case "RIGHT":

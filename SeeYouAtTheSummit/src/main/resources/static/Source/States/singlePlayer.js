@@ -60,7 +60,7 @@ singlePlayerState.prototype = {
 
         if (this.currentGameState == game.GameStates.PreGame)
         {
-            this.currentGameState = game.GameStates.GameInProgress;
+            this.startMatch();
         }
         else 
         {
@@ -120,6 +120,13 @@ singlePlayerState.prototype = {
     //////////////
     //GAME STATE//
     //////////////
+    startMatch: function()
+    {
+        this.currentGameState = game.GameStates.GameInProgress;
+        calmMusic.stop();
+        matchMusic.play();
+    },
+
     checkForGameEnd: function()
     {
         //are the players on screen?
