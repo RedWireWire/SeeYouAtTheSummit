@@ -565,6 +565,9 @@ onlineMultiplayerState.prototype = {
 
     goBackToMainMenu: function()
     {
+        game.sfxRun.stop();
+        game.sfxWallSlide.stop();
+        
         game.state.start("mainMenuState");
     },
 
