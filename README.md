@@ -2,6 +2,8 @@
 
 Un juego de Red Wire Wire, desarrollado por Mario Rabanaque Buil, Andrés Tena De Tena y Aitor Iribar Etxezarreta
 
+#Tráiler del juego: https://www.youtube.com/watch?v=l_wtO6jut-o&feature=youtu.be
+
 # Segunda versión de GDD
 
 # Concepto
